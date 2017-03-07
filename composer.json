@@ -1,0 +1,18 @@
+{
+    "name": "goodid/goodid-php-sdk",
+    "description": "GoodID SDK for PHP",
+    "keywords": ["goodid", "sdk"],
+    "type": "library",
+    "homepage": "https://github.com/idandtrust/goodid-php-sdk",
+    "license": "GoodID Platform",
+    "require": {
+        "php": ">=5.6.3",
+        "sop/jwx": "^0.8.0",
+        "lcobucci/jwt": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "GoodID\\": "src/GoodID/"
+        }
+    }
+}
