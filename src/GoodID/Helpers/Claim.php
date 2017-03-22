@@ -1,23 +1,21 @@
 <?php
 
-namespace GoodID\Helpers\JWT\Claim;
+namespace GoodID\Helpers;
 
 /**
- * Base class for registered claims.
+ * Class Claim
  *
  * @link http://www.iana.org/assignments/jwt/jwt.xhtml
  */
-abstract class RegisteredClaim extends Claim
+class Claim
 {
     // JWT claims
     const NAME_ISSUER = "iss";
     const NAME_SUBJECT = "sub";
     const NAME_AUDIENCE = "aud";
     const NAME_EXPIRATION_TIME = "exp";
-    const NAME_NOT_BEFORE = "nbf";
     const NAME_ISSUED_AT = "iat";
-    const NAME_JWT_ID = "jti";
-    
+
     // OpenID claims
     const NAME_FULL_NAME = "name";
     const NAME_GIVEN_NAME = "given_name";
@@ -46,48 +44,8 @@ abstract class RegisteredClaim extends Claim
     const NAME_ACR = "acr";
     const NAME_AMR = "amr";
     const NAME_SUB_JWK = "sub_jwk";
-    
-    /**
-     * Mapping from registered claim name to class name.
-     *
-     * @internal
-     *
-     * @var array
-     */
-    const MAP_NAME_TO_CLASS = array(
-        /* @formatter:off */
-        self::NAME_ISSUER => IssuerClaim::class,
-        self::NAME_SUBJECT => SubjectClaim::class,
-        self::NAME_AUDIENCE => AudienceClaim::class,
-        self::NAME_EXPIRATION_TIME => ExpirationTimeClaim::class,
-        self::NAME_NOT_BEFORE => NotBeforeClaim::class,
-        self::NAME_ISSUED_AT => IssuedAtClaim::class,
-        self::NAME_JWT_ID => JWTIDClaim::class
-        /* @formatter:on */
-    );
-    
-    /**
-     * Constructor.
-     *
-     * Defined here for type strictness. Parameters are passed to the
-     * superclass.
-     *
-     * @param mixed ...$args
-     */
-    public function __construct(...$args)
-    {
-        parent::__construct((string) $args[0], $args[1],
-            isset($args[2]) ? $args[2] : null);
-    }
-    
-    /**
-     * Initialize concrete claim instance from a JSON value.
-     *
-     * @param mixed $value
-     * @return RegisteredClaim
-     */
-    public static function fromJSONValue($value)
-    {
-        return new static($value);
-    }
+
+    // GoodID claims
+    const NAME_CLAIMS = "claims";
+    const NAME_GOODID_EMAIL_CERT = "email_cert";
 }

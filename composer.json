@@ -6,9 +6,10 @@
     "homepage": "https://github.com/idandtrust/goodid-php-sdk",
     "license": "GoodID Platform",
     "require": {
-        "php": ">=5.6.3",
-        "sop/jwx": "^0.8.0",
-        "lcobucci/jwt": "^3.2"
+        "php": ">=5.6",
+        "ext-openssl": "*",
+        "spomky-labs/jose": "^6.0",
+        "paragonie/random_compat": "^1|^2"
     },
     "autoload": {
         "psr-4": {

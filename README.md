@@ -10,35 +10,58 @@ The GoodID PHP SDK can be installed with [Composer](https://getcomposer.org/). A
 ```json
 {
     "require": {
-        "goodid/goodid-php-sdk": "~1.0"
+        "goodid/goodid-php-sdk": "~1.1"
     }
 }
 ```
 
 ## Usage
 
-> **Note:** This version of the GoodID SDK for PHP requires PHP 5.6.3 or greater.
+> **Note:** This version of the GoodID SDK for PHP requires PHP 5.6 or greater.
+
+1. Put the following code into the page where you display the "Sign in with GoodID" button
 
 ```php
 $goodId = new GoodID\Authentication\ImplicitAuthentication($clientId);
 
+$nonce = $goodId->generateNonce();
+$state = $goodId->generateState();
+
+// Take the `$nonce` and `$state` into the frontend
+// by e.g. adding those to your template
+// to be able to easily reach them with javascript
+
+```
+
+2. When you receive the End User's data from GoodID into your javascript, 
+pass the result of `GoodID.getData()`into your backend 
+by an AJAX request to be able to do the followings:
+
+```php
 try {
-    // Get the claims from the idToken
-    $idTokenClaims = $goodId->getIdTokenClaims($jwsIdToken);
+    // Get all the claims combained from the idToken and userInfo
+    $allClaims = $goodId->getClaims($jwsIdToken, $jwsUserInfo, $receivedState);
 
-    // Get the claims from the userInfo
+    // Or you can get them separately
+    // but in this case please make sure the `sub` is the same in `idtoken` and `userinfo`
+    $idTokenClaims = $goodId->getIdTokenClaims($jwsIdToken, $receivedState);
     $userInfoClaims = $goodId->getUserInfoClaims($jwsUserInfo);
-    $requestedClaimsFromUserInfo = $userInfoClaims->get('claims');
 
-    // Or you can get all the claims combained from the idToken and userInfo
-    $allClaims = $goodId->getClaims($jwsIdToken, $jwsUserInfo);
-} catch(GoodID\Exception\ValidationException $e) {
+    if ($idTokenClaims->get('sub') !== $userInfoClaims->get('sub')) {
+        throw new GoodID\Exception\GoodIDException('The idToken and userinfo data belong to different users.');
+    }
+} catch(GoodID\Exception\GoodIDException $e) {
     echo 'GoodID SDK returned an error: ' . $e->getMessage();
     exit;
 }
 
-echo "The identity of the logged in user is: " . $idTokenClaims->get('sub')->value() . "\n";
+echo "The identity of the user is: " . $idTokenClaims->get('sub') . "\n";
 echo "All the requested claims about the user: \n";
-print_r($requestedClaimsFromUserInfo);
+print_r($userInfoClaims->get('claims'));
 
 ```
+
+3. Now you can be sure the data that you received from GoodID was securely sent by the End User and you are able to do the followings:
+    1. Do your custom validation on the `$requestedClaimsFromUserInfo` if you wish
+    2. Log in the user
+    3. Go back to your frontend with a response for the AJAX request to redirect the user into your Welcome page (or to display the error if there was any.).

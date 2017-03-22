@@ -3,18 +3,15 @@
 namespace GoodID\Authentication;
 
 use GoodID\Exception\ValidationException;
-use GoodID\Helpers\JWT\Claims;
-use GoodID\Helpers\JWT\JWT;
-use JWX\JWA\JWA;
-use JWX\JWK\JWK;
-use JWX\JWK\Parameter\CurveParameter;
-use JWX\JWK\Parameter\JWKParameter;
-use JWX\JWK\Parameter\KeyTypeParameter;
-use JWX\JWT\Claim\RegisteredClaim;
-use JWX\JWT\Parameter\JWTParameter;
-use JWX\JWT\ValidationContext;
-use JWX\Util\Base64;
-use Lcobucci\JWT\Parser;
+use GoodID\Helpers\Claim;
+use GoodID\Helpers\Curve;
+use GoodID\Helpers\JWKParameter;
+use GoodID\Helpers\KeyType;
+use GoodID\Helpers\RandomStringGenerator;
+use GoodID\Helpers\Result;
+use Jose\Loader;
+use Jose\Object\JWK;
+use Jose\Object\JWS;
 
 /**
  * Class of GoodID implicit authentication method
@@ -24,182 +21,172 @@ class ImplicitAuthentication extends AbstractAuthentication
     /**
      * @param string $jwsIdToken
      * @param string $jwsUserInfo
+     * @param string $receivedState
      *
-     * @return Claims
+     * @return Result
      */
-    public function getClaims($jwsIdToken, $jwsUserInfo)
+    public function getClaims($jwsIdToken, $jwsUserInfo, $receivedState)
     {
-        return new Claims(...array_values(array_merge(
-            $this->getIdTokenClaims($jwsIdToken)->all(),
-            $this->getUserInfoClaims($jwsUserInfo)->all())
-        ));
+        $idTokenClaims = $this->getIdTokenClaims($jwsIdToken, $receivedState)->toArray();
+        $userinfoClaims = $this->getUserInfoClaims($jwsUserInfo)->toArray();
+
+        if (!isset($idTokenClaims[Claim::NAME_SUBJECT])
+            || !isset($userinfoClaims[Claim::NAME_SUBJECT])
+            || $idTokenClaims[Claim::NAME_SUBJECT] !== $userinfoClaims[Claim::NAME_SUBJECT]) {
+            throw new ValidationException('The idToken and userinfo data belong to different users.');
+        }
+
+        return new Result(array_merge($idTokenClaims, $userinfoClaims));
     }
 
     /**
      * @param string $jwsUserInfo
      *
-     * @return Claims
+     * @return Result
      */
     public function getUserInfoClaims($jwsUserInfo)
     {
         // @TODO validate if jws is a userInfo JWS
 
-        return $this->getVerifiedClaims($jwsUserInfo);
+        $claims = $this->getVerifiedClaims($jwsUserInfo);
+
+        if (isset($claims[Claim::NAME_CLAIMS][Claim::NAME_EMAIL_VERIFIED])
+            && isset($claims[Claim::NAME_CLAIMS][Claim::NAME_GOODID_EMAIL_CERT])) {
+            unset($claims[Claim::NAME_CLAIMS][Claim::NAME_GOODID_EMAIL_CERT]);
+        }
+
+        return new Result($claims);
     }
 
     /**
      * @param string $jwsIdToken
+     * @param string $receivedState
      *
-     * @return Claims
+     * @return Result
      *
      * @throws ValidationException
-     * @throws \Exception
      */
-    public function getIdTokenClaims($jwsIdToken)
+    public function getIdTokenClaims($jwsIdToken, $receivedState)
     {
         // @TODO validate if jws is an idToken JWS
 
+        if ($receivedState !== $this->sessionDataHandler->get(self::SESSION_KEY_STATE)) {
+            throw new ValidationException('The received state is invalid.');
+        }
+
         $claims = $this->getVerifiedClaims($jwsIdToken);
 
-        // Verify expiration time
-        if (!$claims->has(RegisteredClaim::NAME_EXPIRATION_TIME)
-            || !is_int($claims->get(RegisteredClaim::NAME_EXPIRATION_TIME)->value())
-            || time() >= $claims->get(RegisteredClaim::NAME_EXPIRATION_TIME)->value()
+        if (!isset($claims[Claim::NAME_EXPIRATION_TIME])
+            || !is_int($claims[Claim::NAME_EXPIRATION_TIME])
+            || time() >= $claims[Claim::NAME_EXPIRATION_TIME]
         ) {
             throw new ValidationException("Expired token.");
         }
 
+        if (!isset($claims[Claim::NAME_NONCE])
+            || $this->sessionDataHandler->get(self::SESSION_KEY_NONCE) !== $claims[Claim::NAME_NONCE]
+        ) {
+            throw new ValidationException("The received nonce is invalid.");
+        }
+
         // Remove `claims` because personal data can be only requested in userinfo
-        if ($claims->has('claims')) {
-            $claimsArray = $claims->toArray();
-            unset($claimsArray['claims']);
-
-            $claims = Claims::fromJSON(json_encode($claimsArray));
+        if (isset($claims[Claim::NAME_CLAIMS])) {
+            unset($claims[Claim::NAME_CLAIMS]);
         }
 
-        return $claims;
+        return new Result($claims);
     }
 
     /**
-     * @param JWK $jwk
-     *
      * @return string
-     *
-     * @throws ValidationException
      */
-    private function jwkThumbprint(JWK $jwk)
+    public function generateState()
     {
-        if (!in_array(self::HASH_SHA256, hash_algos())) {
-            throw new ValidationException('sha256 hash is not supported in your php');
-        }
+        $random = RandomStringGenerator::getPseudoRandomString(32);
+        $this->sessionDataHandler->set(self::SESSION_KEY_STATE, $random);
 
-        $values = array_intersect_key($jwk->toArray(), array_flip([
-            JWKParameter::PARAM_KEY_TYPE,
-            JWKParameter::PARAM_MODULUS,
-            JWKParameter::PARAM_EXPONENT,
-            JWKParameter::PARAM_CURVE,
-            JWKParameter::PARAM_X_COORDINATE,
-            JWKParameter::PARAM_Y_COORDINATE,
-            JWKParameter::PARAM_KEY_VALUE
-        ]));
-
-        ksort($values);
-        $input = json_encode($values);
-
-        return Base64::urlEncode(hash(self::HASH_SHA256, $input, true));
+        return $random;
     }
 
     /**
-     * @param string $jws
-     *
-     * @return JWT
+     * @return string
      */
-    private function getJwtFromJws($jws)
+    public function generateNonce()
     {
-        try {
-            return new JWT($jws);
-        } catch (\Exception $e) {
-            throw new ValidationException('Invalid JWS string.');
-        }
+        $random = RandomStringGenerator::getPseudoRandomString(32);
+        $this->sessionDataHandler->set(self::SESSION_KEY_NONCE, $random);
+
+        return $random;
     }
 
     /**
-     * @param string $jws
+     * @param JWS $jws
      *
      * @return JWK
      *
      * @throws ValidationException
-     * @throws \Exception
      */
-    private function getJwkFromJws($jws)
+    private function getJwkFromJws(JWS $jws)
     {
-        try {
-            $unverifiedJWS = (new Parser())->parse((string) $jws);
-        } catch (\Exception $e) {
-            throw new ValidationException('Invalid JWS string.');
-        }
-
-        if (!$unverifiedJWS->hasClaim(RegisteredClaim::NAME_SUB_JWK)) {
+        if (!$jws->hasClaim(Claim::NAME_SUB_JWK)) {
             throw new ValidationException('Missing sub_jwk.');
         }
 
         try {
-            $jwkArray = (array) $unverifiedJWS->getClaim(RegisteredClaim::NAME_SUB_JWK);
+            $jwkArray = (array) $jws->getClaim(Claim::NAME_SUB_JWK);
 
             if (!isset($jwkArray[JWKParameter::PARAM_KEY_TYPE])
                 || !isset($jwkArray[JWKParameter::PARAM_CURVE])
-                || $jwkArray[JWKParameter::PARAM_KEY_TYPE] !== KeyTypeParameter::TYPE_EC
-                || $jwkArray[JWKParameter::PARAM_CURVE] !== CurveParameter::CURVE_P256
+                || $jwkArray[JWKParameter::PARAM_KEY_TYPE] !== KeyType::TYPE_EC
+                || $jwkArray[JWKParameter::PARAM_CURVE] !== Curve::CURVE_P256
             ) {
                 throw new \Exception();
             }
 
-            return JWK::fromArray($jwkArray);
+            return new JWK($jwkArray);
         } catch (\Exception $e) {
             throw new ValidationException('Invalid sub_jwk format.');
         }
     }
 
     /**
-     * @param string $jws
+     * @param string $jwsString
      *
-     * @return Claims
+     * @return array
      *
      * @throws ValidationException
      */
-    private function getVerifiedClaims($jws)
+    private function getVerifiedClaims($jwsString)
     {
-        $jwk = $this->getJwkFromJws($jws);
-        $jwt = $this->getJwtFromJws($jws);
-        
-        try {
-            $validationContext = ValidationContext::fromJWK($jwk)->withReferenceTime(null);
+        $loader = new Loader();
 
-            $claims = $jwt->claims($validationContext);
+        try {
+            $unverifiedJws = $loader->load($jwsString);
+        } catch (\Exception $e) {
+            throw new ValidationException('Invalid JWS string.');
+        }
+
+        $jwk = $this->getJwkFromJws($unverifiedJws);
+
+        try {
+            $verifiedJws = $loader->loadAndVerifySignatureUsingKey($jwsString, $jwk, [self::ALGO_ES256]);
+            $claims = $verifiedJws->getClaims();
         } catch (\Exception $e) {
             throw new ValidationException('Invalid signature.');
         }
 
-        $header = $jwt->header();
-        if (!$header->has(JWTParameter::PARAM_ALGORITHM) || $header->get(JWTParameter::PARAM_ALGORITHM)->value() !== JWA::ALGO_ES256) {
-            throw new ValidationException('Invalid algorithm requested in token.');
-        }
-        
         // Verify that sub_jwk corresponds to sub
-        $jwkThumbprint = $this->jwkThumbprint($jwk);
-        if (!$claims->has(RegisteredClaim::NAME_SUBJECT)
-            || $claims->get(RegisteredClaim::NAME_SUBJECT)->value() !== $jwkThumbprint
-        ) {
-            throw new ValidationException('Invalid signature: sub vs sub_jwk mismatch.');
+        if (!isset($claims[Claim::NAME_SUBJECT]) || $claims[Claim::NAME_SUBJECT] !== $jwk->thumbprint("sha256")) {
+            throw new \Exception('Invalid signature: sub vs sub_jwk mismatch.');
         }
 
         // Verify issuer
-        if (!$claims->has(RegisteredClaim::NAME_ISSUER) || $claims->get(RegisteredClaim::NAME_ISSUER)->value() !== self::ISS_GOODID) {
-            throw new ValidationException("Invalid issuer.");
-        }
+            if (!isset($claims[Claim::NAME_ISSUER]) || $claims[Claim::NAME_ISSUER] !== self::ISS_GOODID) {
+                throw new \Exception("Invalid issuer.");
+            }
 
         // Verify audience
-        if (!$claims->has(RegisteredClaim::NAME_AUDIENCE) || !in_array($this->clientId, $claims->get(RegisteredClaim::NAME_AUDIENCE)->value())) {
+        if (!isset($claims[Claim::NAME_AUDIENCE]) || $claims[Claim::NAME_AUDIENCE] !== $this->clientId) {
             throw new ValidationException("Invalid audience.");
         }
 

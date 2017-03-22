@@ -3,8 +3,8 @@
 namespace GoodID\Exception;
 
 /**
- * Exception thrown when claim validation fails.
+ * Class ValidationException
  */
-class ValidationException extends \RuntimeException
+class ValidationException extends GoodIDException
 {
 }

@@ -1,7 +1,7 @@
 <?php
 
-if (version_compare(PHP_VERSION, '5.6.3', '<')) {
-    throw new Exception('The GoodID SDK requires PHP version 5.6.3 or higher.');
+if (version_compare(PHP_VERSION, '5.6', '<')) {
+    throw new Exception('The GoodID SDK requires PHP version 5.6 or higher.');
 }
 
 /**
