@@ -55,9 +55,9 @@ try {
     exit;
 }
 
-echo "The identity of the user is: " . $idTokenClaims->get('sub') . "\n";
+echo "The identity of the user is: " . $allClaims->get('sub') . "\n";
 echo "All the requested claims about the user: \n";
-print_r($userInfoClaims->get('claims'));
+print_r($allClaims->get('claims'));
 
 ```
 
