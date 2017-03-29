@@ -10,6 +10,15 @@ use GoodID\Exception\GoodIDException;
 class SessionDataHandler
 {
     /**
+     * @var int
+     *
+     * On mobile the app reloads the site when submitting the data
+     * so we need to store the previously generated values
+     * to be able to validate against those.
+     */
+    const SESSION_SIZE_LIMIT = 5;
+
+    /**
      * @var string
      */
     protected $sessionPrefix = 'GoodID_';
@@ -48,6 +57,23 @@ class SessionDataHandler
      */
     public function set($key, $value)
     {
-        $_SESSION[$this->sessionPrefix . $key] = $value;
+        if (!isset($_SESSION[$this->sessionPrefix . $key]) || !is_array($_SESSION[$this->sessionPrefix . $key])) {
+            $_SESSION[$this->sessionPrefix . $key] = [];
+        }
+
+        // Remove the oldest key
+        if (count($_SESSION[$this->sessionPrefix . $key]) >= self::SESSION_SIZE_LIMIT) {
+            array_shift($_SESSION[$this->sessionPrefix . $key]);
+        }
+
+        $_SESSION[$this->sessionPrefix . $key][] = $value;
+    }
+
+    /**
+     * @param string $key
+     */
+    public function remove($key)
+    {
+        unset($_SESSION[$this->sessionPrefix . $key]);
     }
 }

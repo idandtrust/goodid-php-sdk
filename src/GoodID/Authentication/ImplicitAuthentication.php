@@ -70,9 +70,12 @@ class ImplicitAuthentication extends AbstractAuthentication
     {
         // @TODO validate if jws is an idToken JWS
 
-        if ($receivedState !== $this->sessionDataHandler->get(self::SESSION_KEY_STATE)) {
+        if (!in_array($receivedState, $this->sessionDataHandler->get(self::SESSION_KEY_STATE))) {
             throw new ValidationException('The received state is invalid.');
         }
+
+        // Remove all the stored state parameters from session.
+        $this->sessionDataHandler->remove(self::SESSION_KEY_STATE);
 
         $claims = $this->getVerifiedClaims($jwsIdToken);
 
@@ -84,10 +87,13 @@ class ImplicitAuthentication extends AbstractAuthentication
         }
 
         if (!isset($claims[Claim::NAME_NONCE])
-            || $this->sessionDataHandler->get(self::SESSION_KEY_NONCE) !== $claims[Claim::NAME_NONCE]
+            || !in_array($claims[Claim::NAME_NONCE], $this->sessionDataHandler->get(self::SESSION_KEY_NONCE))
         ) {
             throw new ValidationException("The received nonce is invalid.");
         }
+
+        // Remove all the stored nonce parameters from session.
+        $this->sessionDataHandler->remove(self::SESSION_KEY_NONCE);
 
         // Remove `claims` because personal data can be only requested in userinfo
         if (isset($claims[Claim::NAME_CLAIMS])) {
