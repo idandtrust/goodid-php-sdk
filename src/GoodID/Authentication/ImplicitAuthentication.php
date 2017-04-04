@@ -70,7 +70,8 @@ class ImplicitAuthentication extends AbstractAuthentication
     {
         // @TODO validate if jws is an idToken JWS
 
-        if (!in_array($receivedState, $this->sessionDataHandler->get(self::SESSION_KEY_STATE))) {
+        $storedStates = $this->sessionDataHandler->get(self::SESSION_KEY_STATE);
+        if (is_null($storedStates) || !in_array($receivedState, $storedStates)) {
             throw new ValidationException('The received state is invalid.');
         }
 
@@ -86,8 +87,10 @@ class ImplicitAuthentication extends AbstractAuthentication
             throw new ValidationException("Expired token.");
         }
 
+        $storedNonces = $this->sessionDataHandler->get(self::SESSION_KEY_NONCE);
         if (!isset($claims[Claim::NAME_NONCE])
-            || !in_array($claims[Claim::NAME_NONCE], $this->sessionDataHandler->get(self::SESSION_KEY_NONCE))
+            || is_null($storedNonces)
+            || !in_array($claims[Claim::NAME_NONCE], $storedNonces)
         ) {
             throw new ValidationException("The received nonce is invalid.");
         }
