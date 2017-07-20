@@ -1,51 +1,45 @@
 <?php
+/**
+ * Copyright 2017 ID&Trust, Ltd.
+ *
+ * You are hereby granted a non-exclusive, worldwide, royalty-free license to
+ * use, copy, modify, and distribute this software in source code or binary form
+ * for use in connection with the web services and APIs provided by ID&Trust.
+ *
+ * As with any software that integrates with the GoodID platform, your use
+ * of this software is subject to the GoodID Terms of Service
+ * (https://goodid.net/docs/tos).
+ * This copyright notice shall be included in all copies or substantial portions
+ * of the software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ */
 
 namespace GoodID\Helpers;
 
 /**
  * Class Claim
  *
- * @link http://www.iana.org/assignments/jwt/jwt.xhtml
+ * @link http://www.iana.org/assignments/jwt/jwt.xhtml JWT claims list
+ * There are other claims supported by GoodID
+ *
+ * Only the architecturally important claims are declared here
+ * All claims can simply be referred to by their names by the RP's code
  */
 class Claim
 {
-    // JWT claims
     const NAME_ISSUER = "iss";
     const NAME_SUBJECT = "sub";
     const NAME_AUDIENCE = "aud";
     const NAME_EXPIRATION_TIME = "exp";
     const NAME_ISSUED_AT = "iat";
-
-    // OpenID claims
-    const NAME_FULL_NAME = "name";
-    const NAME_GIVEN_NAME = "given_name";
-    const NAME_FAMILY_NAME = "family_name";
-    const NAME_MIDDLE_NAME = "middle_name";
-    const NAME_NICKNAME = "nickname";
-    const NAME_PREFERRED_USERNAME = "preferred_username";
-    const NAME_PROFILE_URL = "profile";
-    const NAME_PICTURE_URL = "picture";
-    const NAME_WEBSITE_URL = "website";
-    const NAME_EMAIL = "email";
-    const NAME_EMAIL_VERIFIED = "email_verified";
-    const NAME_GENDER = "gender";
-    const NAME_BIRTHDATE = "birthdate";
-    const NAME_TIMEZONE = "zoneinfo";
-    const NAME_LOCALE = "locale";
-    const NAME_PHONE_NUMBER = "phone_number";
-    const NAME_PHONE_NUMBER_VERIFIED = "phone_number_verified";
-    const NAME_ADDRESS = "address";
-    const NAME_UPDATED_AT = "updated_at";
-    const NAME_AUTHORIZED_PARTY = "azp";
-    const NAME_NONCE = "nonce";
-    const NAME_AUTH_TIME = "auth_time";
-    const NAME_ACCESS_TOKEN_HASH = "at_hash";
-    const NAME_CODE_HASH = "c_hash";
-    const NAME_ACR = "acr";
-    const NAME_AMR = "amr";
     const NAME_SUB_JWK = "sub_jwk";
-
-    // GoodID claims
     const NAME_CLAIMS = "claims";
-    const NAME_GOODID_EMAIL_CERT = "email_cert";
 }

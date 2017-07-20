@@ -24,43 +24,34 @@
 
 namespace GoodID\Helpers;
 
-use GoodID\Exception\GoodIDException;
-
 /**
- * Class RandomStringGenerator
+ * JwtUtil class
  */
-final class RandomStringGenerator
+final class JwtUtil
 {
     /**
-     * Generate a random string, using a cryptographically secure
-     * pseudorandom number generator (random_int)
+     * Determines if a JWT string is a compact JWS
+     * Its internal structure and validity is NOT checked
      *
-     * For PHP 7, random_int is a PHP core function
-     * For PHP 5.x, depends on https://github.com/paragonie/random_compat
+     * @param string $jwt JWT string
      *
-     * @param int $length How many characters do we want?
-     * @param string $keyspace A string of all possible characters
-     *                         to select from
-     *
-     * @return string
-     *
-     * @throws GoodIDException
+     * @return bool isCompactJWS
      */
-    public static function getPseudoRandomString(
-        $length,
-        $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    ) {
-        try {
-            $str = '';
-            $max = mb_strlen($keyspace, '8bit') - 1;
+    public static function isCompactJws($jwt)
+    {
+        return substr_count($jwt, '.') === 2;
+    }
 
-            for ($i = 0; $i < $length; ++$i) {
-                $str .= $keyspace[random_int(0, $max)];
-            }
-        } catch (\Exception $e) {
-            throw new GoodIDException('Please make sure you enable mcrypt or /dev/urandom is readable!');
-        }
-
-        return $str;
+    /**
+     * Determines if a JWT string is a compact JWE
+     * Its internal structure and validity is NOT checked
+     *
+     * @param string $jwt JWT string
+     *
+     * @return bool isCompactJWE
+     */
+    public static function isCompactJwe($jwt)
+    {
+        return substr_count($jwt, '.') === 4;
     }
 }

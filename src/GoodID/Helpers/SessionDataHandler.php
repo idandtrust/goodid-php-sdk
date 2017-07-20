@@ -1,4 +1,26 @@
 <?php
+/**
+ * Copyright 2017 ID&Trust, Ltd.
+ *
+ * You are hereby granted a non-exclusive, worldwide, royalty-free license to
+ * use, copy, modify, and distribute this software in source code or binary form
+ * for use in connection with the web services and APIs provided by ID&Trust.
+ *
+ * As with any software that integrates with the GoodID platform, your use
+ * of this software is subject to the GoodID Terms of Service
+ * (https://goodid.net/docs/tos).
+ * This copyright notice shall be included in all copies or substantial portions
+ * of the software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ */
 
 namespace GoodID\Helpers;
 
@@ -6,25 +28,58 @@ use GoodID\Exception\GoodIDException;
 
 /**
  * Class SessionDataHandler
+ * This class handles the storage and retrieval of data to and from session.
  */
 class SessionDataHandler
 {
     /**
-     * @var int
      *
-     * On mobile the app reloads the site when submitting the data
-     * so we need to store the previously generated values
-     * to be able to validate against those.
+     * The session key for nonce
+     * Value type: string
      */
-    const SESSION_SIZE_LIMIT = 5;
+    const SESSION_KEY_NONCE = 'nonce';
+
+    /**
+     * The session key for state
+     * Value type: string
+     */
+    const SESSION_KEY_STATE = 'state';
+
+    /**
+     * The session key for the requested claims
+     * If the requested claims can not be determined because they are encrypted
+     * then OpenIDRequestSource::CONTENT_IS_ENCRYPTED value is stored
+     *
+     * Value type: array|string
+     */
+    const SESSION_KEY_REQUESTED_CLAIMS = "claims";
+
+    /**
+     * The session key for the used request_uri
+     * Value type: string
+     */
+    const SESSION_KEY_USED_REQUEST_URI = "requesturi";
+
+    /**
+     * The session key for the used redirect_uri
+     * Value type: string
+     */
+    const SESSION_KEY_USED_REDIRECT_URI = "redirecturi";
+
+    /**
+     * Session key: Is the request initiated outside the RP backend.
+     * Eg.: provider screen
+     * Value type: bool
+     */
+    const SESSION_KEY_EXTERNALLY_INITIATED = "extinit";
 
     /**
      * @var string
      */
-    protected $sessionPrefix = 'GoodID_';
+    protected $goodidSessionKey = '__GoodID__';
 
     /**
-     * Construct.
+     * Construct
      *
      * @throws GoodIDException If the session has not been started.
      */
@@ -32,48 +87,68 @@ class SessionDataHandler
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
             throw new GoodIDException(
-                'Session has not been started. Please start that fist with session_start().'
+                'Session has not been started. Please start that first with session_start().'
             );
         }
     }
 
     /**
-     * @param string $key
+     * @param string $key Key
      *
-     * @return mixed
+     * @return mixed Value
+     *
+     * @throws GoodIDException
      */
     public function get($key)
     {
-        if (isset($_SESSION[$this->sessionPrefix . $key])) {
-            return $_SESSION[$this->sessionPrefix . $key];
+        if (isset($_SESSION[$this->goodidSessionKey])) {
+            if (!is_array($_SESSION[$this->goodidSessionKey])) {
+                unset($_SESSION[$this->goodidSessionKey]);
+                throw new GoodIDException("GoodIDSessionKey: "
+                    . $this->goodidSessionKey
+                    . " might be used by someone other than the GoodID PHP SDK.");
+            }
+            if (isset($_SESSION[$this->goodidSessionKey][$key])) {
+                return $_SESSION[$this->goodidSessionKey][$key];
+            }
         }
 
         return null;
     }
 
     /**
-     * @param string $key
-     * @param mixed $value
+     * @param string $key Key
+     * @param mixed $value Value
+     *
+     * @throws GoodIDException
      */
     public function set($key, $value)
     {
-        if (!isset($_SESSION[$this->sessionPrefix . $key]) || !is_array($_SESSION[$this->sessionPrefix . $key])) {
-            $_SESSION[$this->sessionPrefix . $key] = [];
+        if (!isset($_SESSION[$this->goodidSessionKey])) {
+            $_SESSION[$this->goodidSessionKey] = [];
+        } elseif (!is_array($_SESSION[$this->goodidSessionKey])) {
+            unset($_SESSION[$this->goodidSessionKey]);
+            throw new GoodIDException("GoodIDSessionKey: "
+                . $this->goodidSessionKey
+                . " might be used by someone other than the GoodID PHP SDK.");
         }
 
-        // Remove the oldest key
-        if (count($_SESSION[$this->sessionPrefix . $key]) >= self::SESSION_SIZE_LIMIT) {
-            array_shift($_SESSION[$this->sessionPrefix . $key]);
-        }
-
-        $_SESSION[$this->sessionPrefix . $key][] = $value;
+        $_SESSION[$this->goodidSessionKey][$key] = $value;
     }
 
     /**
-     * @param string $key
+     * @param string $key Key
      */
     public function remove($key)
     {
-        unset($_SESSION[$this->sessionPrefix . $key]);
+        unset($_SESSION[$this->goodidSessionKey][$key]);
+    }
+
+    /**
+     * Remove the whole GoodID session key
+     */
+    public function removeAll()
+    {
+        unset($_SESSION[$this->goodidSessionKey]);
     }
 }

@@ -22,12 +22,30 @@
  *
  */
 
-namespace GoodID\Exception;
+namespace GoodID\Helpers\Logger;
 
 /**
- * Class ValidationException
- * Indicates a validation error
+ * Log levels
  */
-class ValidationException extends GoodIDException
+class Log
 {
+    const LEVEL_NOTICE = "notice";
+    const LEVEL_WARNING = "warning";
+    const LEVEL_ERROR = "error";
+
+    /**
+     * Is valid?
+     *
+     * @param mixed $value
+     *
+     * @return bool isValid
+     */
+    public static function isValidLogLevel($value)
+    {
+        return in_array($value, [
+            self::LEVEL_NOTICE,
+            self::LEVEL_WARNING,
+            self::LEVEL_ERROR
+        ]);
+    }
 }

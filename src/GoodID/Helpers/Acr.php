@@ -24,43 +24,27 @@
 
 namespace GoodID\Helpers;
 
-use GoodID\Exception\GoodIDException;
-
 /**
- * Class RandomStringGenerator
+ * Authentication Context Class Reference class
+ * (Level of assurance)
  */
-final class RandomStringGenerator
+class Acr
 {
+    const LEVEL_1 = 1;
+    const LEVEL_2 = 2;
+    const LEVEL_3 = 3;
+    const LEVEL_4 = 4;
+    const LEVEL_DEFAULT = 1;
+
     /**
-     * Generate a random string, using a cryptographically secure
-     * pseudorandom number generator (random_int)
+     * Is valid?
      *
-     * For PHP 7, random_int is a PHP core function
-     * For PHP 5.x, depends on https://github.com/paragonie/random_compat
+     * @param mixed $value
      *
-     * @param int $length How many characters do we want?
-     * @param string $keyspace A string of all possible characters
-     *                         to select from
-     *
-     * @return string
-     *
-     * @throws GoodIDException
+     * @return bool isValid
      */
-    public static function getPseudoRandomString(
-        $length,
-        $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    ) {
-        try {
-            $str = '';
-            $max = mb_strlen($keyspace, '8bit') - 1;
-
-            for ($i = 0; $i < $length; ++$i) {
-                $str .= $keyspace[random_int(0, $max)];
-            }
-        } catch (\Exception $e) {
-            throw new GoodIDException('Please make sure you enable mcrypt or /dev/urandom is readable!');
-        }
-
-        return $str;
+    public static function isValid($value)
+    {
+        return in_array($value, [1, 2, 3, 4]);
     }
 }

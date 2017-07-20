@@ -22,12 +22,15 @@
  *
  */
 
-namespace GoodID\Exception;
+namespace GoodID\Helpers;
 
 /**
- * Class ValidationException
- * Indicates a validation error
+ * This class contains the main configuration values corresponding to this version of the GoodID PHP SDK
  */
-class ValidationException extends GoodIDException
+class Config
 {
+    /**
+     * The version of this SDK
+     */
+    const GOODID_PHP_SDK_VERSION = "2.0.0";
 }
