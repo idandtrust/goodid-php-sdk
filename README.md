@@ -10,7 +10,7 @@ The GoodID PHP SDK can be installed with [Composer](https://getcomposer.org/). A
 ```json
 {
     "require": {
-        "goodid/goodid-php-sdk": "~1.1"
+        "goodid/goodid-php-sdk": "~2.0"
     }
 }
 ```
