@@ -146,7 +146,7 @@ try {
     if($response->hasAccessToken()) {
         $logger = new RemoteLogger(
             $response->getAccessToken(),
-            new ServiceLocator()->getServerConfig()
+            (new ServiceLocator())->getServerConfig()
         );
         $logger->log("phone_number", "Data does not conform to ...", Log::LEVEL_ERROR);
         $logger->log("billto.phone_number", "Data does not conform to ...", Log::LEVEL_ERROR);
@@ -199,7 +199,7 @@ $jwt = $requestObject->generateJwt(
     new RSAPrivateKey("The content of your sig.pem as a string"),
     "Your client id",
     "Your default redirect URI",
-    new ServiceLocator()->getServerConfig()
+    (new ServiceLocator())->getServerConfig()
 );
 echo $jwt;
 ```
