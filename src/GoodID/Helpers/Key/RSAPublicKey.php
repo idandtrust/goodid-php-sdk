@@ -24,6 +24,7 @@
 
 namespace GoodID\Helpers\Key;
 
+use Base64Url\Base64Url;
 use GoodID\Exception\GoodIDException;
 use Jose\Factory\JWEFactory;
 use Jose\KeyConverter\RSAKey as SpomkyRSAKey;
@@ -58,6 +59,11 @@ class RSAPublicKey
      * RSAES OAEP using SHA-1 and MGF1 with SHA-1
      */
     const KEY_ENC_ALG_VALUE_RSA_OAEP = "RSA-OAEP";
+
+    /**
+     * Key Identifier param.
+     */
+    const KEY_ID = "kid";
 
     /**
      * Content encryption algorithm parameter name
@@ -140,5 +146,44 @@ class RSAPublicKey
                 self::COMPRESSION_ALG_KEY => self::COMPRESSION_ALG_VALUE_DEF,
             ]
         );
+    }
+
+    /**
+     * Get the public key as a JWK array
+     *
+     * @return array
+     */
+    public function getPublicKeyAsJwkArray()
+    {
+        return $this->jwk->toPublic()->JsonSerialize();
+    }
+
+    /**
+     * @return string
+     * @throws GoodIDException on error
+     */
+    public function getKid()
+    {
+        return substr($this->thumbprint($this->jwk->toPublic()), 0, 5);
+    }
+
+    /**
+     * @param Jwk $jwk
+     * @param string $hash_algorithm
+     *
+     * @return string
+     * @throws GoodIDException on error
+     */
+    private function thumbprint(Jwk $jwk, $hash_algorithm='sha256')
+    {
+        if (!in_array($hash_algorithm, hash_algos())) {
+            throw new GoodIDException('Unsupported hash algorithm ' . $hash_algorithm);
+        }
+
+        $values = array_intersect_key($jwk->getAll(), array_flip(['kty', 'n', 'e']));
+        ksort($values);
+        $input = json_encode($values);
+
+        return Base64Url::encode(hash($hash_algorithm, $input, true));
     }
 }

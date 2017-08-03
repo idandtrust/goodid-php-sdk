@@ -55,6 +55,24 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
         $key->decryptCompactJwe($this->jweEncryptedWithDifferentKey);
     }
 
+    /**
+     * @test
+     */
+    public function itCanGetThePublicKeyAsJwkArray()
+    {
+        $privateKey = new RSAPrivateKey($this->privateKey);
+        $this->assertEquals($this->publicKeyJwkArray, $privateKey->getPublicKeyAsJwkArray());
+    }
+
+    /**
+     * @test
+     */
+    public function itCanGetTheKeyId()
+    {
+        $privateKey = new RSAPrivateKey($this->privateKey);
+        $this->assertEquals('Fpa_c', $privateKey->getKid());
+    }
+
     private $publicKey = '
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv5pUbc0tbzU6GCB0/ja+
@@ -95,7 +113,13 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
 4HynUkRp/eyNXxA8kK0LOAxiUJyQAj1MjNcO3TWH4gO/w1kTbTNRjdQ=
 -----END RSA PRIVATE KEY-----';
 
-    private $jws = 'eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczpcL1wvand0LWlkcC5leGFtcGxlLmNvbSJ9.cHUDZnkiTeTofk-6TVbpdQZ2fdKHUt4uIeoj4gXm-5x9GDdHGEvgklgoWQVfdZV_srVm1g8rNtEtXklx6TFPCuosj0Wiv4U-5HRk5FUI0bCEQg_hKNb3bvCgiTRXhkgfN1X7Z7JXu2kd8eOBeHGuyPTjqaKp8i8QUX_C-Wm2WaDBMYGBHvsQi9RmFqDt79jS371PmXlxRSzM6rdPwYU_7g86gf2-Ow_Zwhq80WfAXlvLbF-PssifVQ-zitohIT8hYQMQ6wizyIhDbHNQ707sm8HtwzB1tajVqySumfumluwdj-y8V2f56UxENEj5v7JzwvhHnmFuw1_cdS1XXynvKw';
+    private $publicKeyJwkArray = [
+        'kty' => 'RSA',
+        'n' => 'v5pUbc0tbzU6GCB0_ja-UTCx9AFqNsKjS_nqKzzHbpXF__XbONjkYV7xQfV4D_a-FbAvQqJidR8P3ndb2zfZ3xuZDd6hzHBMf3GtQldDS2y1_JPhdKLG5_rbjOke9b8mR_zqq8fo-GK0njffAEIQy4P5J50ANFx-8X6UulNUQ_AU_qEsDQnmyxvmasgQhKeNHnwKmMYcYblpj5sLA9-mPfSDrvvGK9_O7wuwrrY73gir9z0aw3URwkYjzibuw71kcxRpp3A9GpQqfw9kDt--MU9lBho5InNZdMI4K6attCMQCePR869AaQ4LHx7NVZM0tp0284Ry4IWQQqQKKEv3WQ',
+        'e' => 'AQAB'
+    ];
+
+    private $jws = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJodHRwczpcL1wvand0LWlkcC5leGFtcGxlLmNvbSJ9.LvuKqTh96j4cMXNylHLfefanvimjbW1JOwgupXN3ej5AaZdliGJeIdyZBNZ2eEDeCo7qqzUcgny6dVP9-2vJ9_LSqiCeT2_ikAQtOtA0AeHlX6zkJkl0sxTewEa46YdEPTocn_YKsTs4MO9xOwT7tB5dLfhPur2_Dtc4IJ2e3WuWLN6hpNFtZef4SAZmW5C9P_s4_e3zRReoirCBfmJnaLNKJOCAL6ODNoUYn8d5F7W83VDmx_MatqtQFTZdMpHhZuHMqQv39BQH1Gx2akM5jXQYoW_sOtTsvXBLuzdb5k9f7dYvKJWzjJVehebS4ILiCYe-P00K8AD0IqgT-wf4Mw';
     private $jwe = 'eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZDQkMtSFM1MTIiLCJ6aXAiOiJERUYifQ.o7srqwh27F-yEPwPfETE_75mJ2qVfmVPqz9kyPSShN9zOZMOOfCkK654tEFx9B9uqQbXvk-HS6CqGsVVbcgwqAKEztw5XKC-UzUnSmzTljcxDYllSW5UcovGa8TmBCPJ540IQY0hxYPs1Neyb1DEO_RVg6sPgt152pMGoeHig9k-9gENiH87BfhAhp7_ZQUWAgkwT06b4i8wlf320uMEulRseuAxSTDg80w0z7PAFlniGgfYAZdlbrLGraj7E-Y0rqGo-2mswpxIsFefgBOY2r43yEcgW98AexmR03Kx95CDjnVnDYa34dYUGp3siqdKSp23NEukvtCjlDPhujsV4g.lIn5EucmygjO6eyLBYFSnQ.gZx2Pf30FsGSQPfbHTR0sj8EvY5Yx6ChePrE-8WEEck.zouxUX_DmS2vfS0UpZCWH6i6FdxvMIEkfKwJgH_CViM';
     private $jweEncryptedWithDifferentKey = 'eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZDQkMtSFM1MTIiLCJ6aXAiOiJERUYifQ.BP9ziOuYjVkqHmehXaMVVnQSnfUu4au2c61WQVRq0n00dZEwCfVYvo14EilBv4p7lZ6LI8EVKNz9Ctf9t_uaWiG0PWhmXSFRIVvLHtIS4OFxYLzQUBNcLorPezX0J6kOm1t2U6Y5lyQYwLxIKTt1gH7LdsMPlaR-2vjq9TKqoGU_F9JTlHwyOjIRBfdsSpX7ZoXFrvmQSm80FUrQpF1RWz05pVyPSXQ1k6lL7v6ivHGPV3geULkQ4XDOdn4WfF306DOb0U39jMBhSW5Vc0sIN0wPkNKLpTS9aqE1gyhSp-AVqVvyeo76H-otitt495sf7SREA2RthZ7aQ227aGaFUw.IlKT4-KbfGWIT3YnYLKbRA.kPmUGBEpQ6TUZMHdr8J46U2uo00HCpRxLlZZc7rjAUY.WuV4bu8i3nIAbwDle5tPDww7_H0TLgfmFZc_WW0F4Ns';
 }

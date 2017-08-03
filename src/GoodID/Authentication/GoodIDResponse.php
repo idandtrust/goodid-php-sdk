@@ -156,7 +156,7 @@ class GoodIDResponse
             $tokenRequest->execute();
 
             $idTokenJws = $encryptionKey->decryptCompactJwe($tokenRequest->getIdTokenJwe());
-            $idToken = $validator->validateIdToken($idTokenJws, $tokenRequest->getGoodIDServerTime());
+            $idToken = $validator->validateIdToken($idTokenJws, $clientSecret, $tokenRequest->getGoodIDServerTime());
 
             if ($tokenRequest->hasAccessToken()) {
                 $accessToken = $tokenRequest->getAccessToken();

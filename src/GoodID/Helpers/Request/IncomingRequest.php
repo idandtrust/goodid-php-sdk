@@ -37,11 +37,6 @@ class IncomingRequest
     private $method;
 
     /**
-     * @var string
-     */
-    private $origin;
-
-    /**
      * @var array
      */
     private $params;
@@ -65,10 +60,6 @@ class IncomingRequest
         } else {
             throw new GoodIDException("Unsupported request method.");
         }
-
-        $this->origin = isset($this->params['request_origin'])
-            ? $this->params['request_origin']
-            : '';
     }
 
     /**
@@ -79,16 +70,6 @@ class IncomingRequest
     public function getMethod()
     {
         return $this->method;
-    }
-
-    /**
-     * Get origin
-     *
-     * @return string
-     */
-    public function getOrigin()
-    {
-        return $this->origin;
     }
 
     /**

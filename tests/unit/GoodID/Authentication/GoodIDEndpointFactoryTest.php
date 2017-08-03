@@ -56,8 +56,9 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $request = $this->createMock(IncomingRequest::class);
         $request->method('getMethod')
             ->willReturn('GET');
-        $request->method('getOrigin')
-            ->willReturn('app');
+        $request->method('getStringParameter')
+            ->with('display')
+            ->willReturn('mobile');
 
         $endpoint = GoodIDEndpointFactory::createGoodIDEndpoint(
             $serviceLocator,
@@ -75,7 +76,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itCreatesRequestBuilderEndpoint()
+    public function itCreatesRequestBuilderEndpointForPage()
     {
         $serviceLocator = $this->createMock(ServiceLocator::class);
         $serviceLocator->method('getServerConfig')
@@ -89,8 +90,43 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $request = $this->createMock(IncomingRequest::class);
         $request->method('getMethod')
             ->willReturn('POST');
-        $request->method('getOrigin')
-            ->willReturn('browser');
+        $request->method('getStringParameter')
+            ->with('display')
+            ->willReturn('page');
+
+        $endpoint = GoodIDEndpointFactory::createGoodIDEndpoint(
+            $serviceLocator,
+            'some-client-id',
+            $mockKey,
+            $mockKey,
+            $mockRequestSource,
+            null,
+            Acr::LEVEL_DEFAULT,
+            $request
+        );
+        $this->assertInstanceOf(GoodIDRequestBuilderEndpoint::class, $endpoint);
+    }
+
+    /**
+     * @test
+     */
+    public function itCreatesRequestBuilderEndpointForPopup()
+    {
+        $serviceLocator = $this->createMock(ServiceLocator::class);
+        $serviceLocator->method('getServerConfig')
+            ->willReturn($this->createMock(GoodIDServerConfig::class));
+        $serviceLocator->method('getSessionDataHandler')
+            ->willReturn($this->createMock(SessionDataHandler::class));
+        $serviceLocator->method('getStateNonceHandler')
+            ->willReturn($this->createMock(StateNonceHandler::class));
+        $mockKey = $this->createMock(RSAPrivateKey::class);
+        $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
+        $request = $this->createMock(IncomingRequest::class);
+        $request->method('getMethod')
+            ->willReturn('POST');
+        $request->method('getStringParameter')
+            ->with('display')
+            ->willReturn('popup');
 
         $endpoint = GoodIDEndpointFactory::createGoodIDEndpoint(
             $serviceLocator,

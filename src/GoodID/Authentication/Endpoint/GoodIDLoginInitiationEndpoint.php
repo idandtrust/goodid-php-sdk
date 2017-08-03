@@ -65,21 +65,22 @@ class GoodIDLoginInitiationEndpoint extends AbstractGoodIDEndpoint
 
         $this->sessionDataHandler->set(
             SessionDataHandler::SESSION_KEY_USED_REQUEST_URI,
-            $requestUri);
+            urldecode($requestUri));
 
         $this->sessionDataHandler->set(
             SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI,
-            $redirectUri);
+            urldecode($redirectUri));
 
         $state = $this->stateNonceHandler->generateState();
 
         $queryParams = [
             'client_id' => $this->clientId,
             'pairing_nonce' => $pairingNonce,
-            'state' => $state
+            'state' => $state,
+            'display' => 'mobile'
         ];
 
-        return $this->goodIdServerConfig->getAuthorizationEndpointUri() . '?' . http_build_query($queryParams);
+        return $this->goodIdServerConfig->getFastAuthorizationEndpointUri() . '?' . http_build_query($queryParams);
     }
 
     /**

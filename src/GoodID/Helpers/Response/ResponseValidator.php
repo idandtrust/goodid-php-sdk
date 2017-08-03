@@ -153,13 +153,14 @@ class ResponseValidator
      * Validates and decodes Id Token
      *
      * @param string $jwsIdToken Id Token as a compact JWS
+     * @param string $clientSecret RP client secret
      * @param int $goodIDServerTime GoodID Server time as a Unix timestamp
      *
      * @return array Id Token as an array
      *
      * @throws ValidationException on error
      */
-    public function validateIdToken($jwsIdToken, $goodIDServerTime)
+    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime)
     {
         $claims = $this->validate($jwsIdToken);
 
@@ -171,9 +172,23 @@ class ResponseValidator
             throw new ValidationException("Expired token.");
         }
 
-        if (!isset($claims[self::CLAIM_NAME_NONCE])
-            || !$this->stateNonceHandler->validateNonce($claims[self::CLAIM_NAME_NONCE])
+        if (!isset($claims[Claim::NAME_ISSUED_AT])
+            || !is_int($claims[Claim::NAME_ISSUED_AT])
+            || $claims[Claim::NAME_ISSUED_AT] > $goodIDServerTime
+            || $claims[Claim::NAME_ISSUED_AT] <= $goodIDServerTime - self::TOKEN_MAX_LIFETIME_SECONDS
         ) {
+            throw new ValidationException("Invalid issuance time.");
+        }
+
+        $isNonceValid = isset($claims[self::CLAIM_NAME_NONCE])
+            && $this->stateNonceHandler->validateNonce(
+                $claims[self::CLAIM_NAME_NONCE],
+                $clientSecret,
+                $goodIDServerTime,
+                $claims[Claim::NAME_ISSUED_AT]
+            );
+
+        if (!$isNonceValid) {
             throw new ValidationException("The received nonce is invalid.");
         }
 

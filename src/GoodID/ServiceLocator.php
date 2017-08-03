@@ -29,6 +29,7 @@ use GoodID\Helpers\Request\RequestFactory;
 use GoodID\Helpers\Response\ResponseValidator;
 use GoodID\Helpers\SessionDataHandler;
 use GoodID\Helpers\StateNonceHandler;
+use GoodID\Helpers\TotpValidator;
 
 /**
  * Utility class
@@ -47,6 +48,11 @@ class ServiceLocator
      * @var SessionDataHandler
      */
     private $sessionDataHandler;
+
+    /**
+     * @var TotpValidator
+     */
+    private $totpValidator;
 
     /**
      * @var StateNonceHandler
@@ -112,6 +118,26 @@ class ServiceLocator
     }
 
     /**
+     * @return TotpValidator
+     */
+    public function getTotpValidator()
+    {
+        if (!isset($this->totpValidator)) {
+            $this->totpValidator = $this->createTotpValidator();
+        }
+
+        return $this->totpValidator;
+    }
+
+    /**
+     * @return TotpValidator
+     */
+    protected function createTotpValidator()
+    {
+        return new TotpValidator();
+    }
+
+    /**
      * @return StateNonceHandler
      */
     public function getStateNonceHandler()
@@ -128,7 +154,7 @@ class ServiceLocator
      */
     protected function createStateNonceHandler()
     {
-        return new StateNonceHandler($this->getSessionDataHandler());
+        return new StateNonceHandler($this->getSessionDataHandler(), $this->getTotpValidator());
     }
 
     /**

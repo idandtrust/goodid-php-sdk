@@ -59,6 +59,24 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($payload, (new RSAPrivateKey($this->privateKey))->decryptCompactJwe($jwe));
     }
 
+    /**
+     * @test
+     */
+    public function itCanGetThePublicKeyAsJwkArray()
+    {
+        $publicKey = new RSAPublicKey($this->publicKey);
+        $this->assertEquals($this->publicKeyJwkArray, $publicKey->getPublicKeyAsJwkArray());
+    }
+
+    /**
+     * @test
+     */
+    public function itCanGetTheKeyId()
+    {
+        $publicKey = new RSAPublicKey($this->publicKey);
+        $this->assertEquals('Fpa_c', $publicKey->getKid());
+    }
+
     private $publicKey = '
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAv5pUbc0tbzU6GCB0/ja+
@@ -98,6 +116,12 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
 6TR+NIWBJjGM+m1FfYsl5CYdXbSW9o5qgMf/EWFlDhQDc/td6kBuXlAJ7yt1OD68
 4HynUkRp/eyNXxA8kK0LOAxiUJyQAj1MjNcO3TWH4gO/w1kTbTNRjdQ=
 -----END RSA PRIVATE KEY-----';
+
+    private $publicKeyJwkArray = [
+        'kty' => 'RSA',
+        'n' => 'v5pUbc0tbzU6GCB0_ja-UTCx9AFqNsKjS_nqKzzHbpXF__XbONjkYV7xQfV4D_a-FbAvQqJidR8P3ndb2zfZ3xuZDd6hzHBMf3GtQldDS2y1_JPhdKLG5_rbjOke9b8mR_zqq8fo-GK0njffAEIQy4P5J50ANFx-8X6UulNUQ_AU_qEsDQnmyxvmasgQhKeNHnwKmMYcYblpj5sLA9-mPfSDrvvGK9_O7wuwrrY73gir9z0aw3URwkYjzibuw71kcxRpp3A9GpQqfw9kDt--MU9lBho5InNZdMI4K6attCMQCePR869AaQ4LHx7NVZM0tp0284Ry4IWQQqQKKEv3WQ',
+        'e' => 'AQAB'
+    ];
 
     private $jws = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2p3dC1pZHAuZXhhbXBsZS5jb20ifQ.QcG85FlQo2_y0fAVTpggGlyahk-WoyuhJVl3I3VUnXBbEk2aJgnMqCx0kLLEDfwzNsgUtHrFACfXBaep0cu99qpOQ-4QbLWzNgaoH7s2a91vbqYcuI31b9j_S_SMeki1La92XSg2npALq782mYZgyxu497Ez_bXkq42NW97RaiKmpuChxM_PSgQdRADFOjeeEdRua_DBdDT_7un4AsT5fM_0kc9cQmJPMsX8j1yq-ULgIN3lQZ9qQiO2R8wo86FFMH8FA1yHPOX4-LzQyJObFqpczFGbbvLAiOn98xxjw5n2VpmpoVnDAMj3taQ88mpU69tKY3gnerXkm5qwHnw_kw';
     private $jwsEmptyPayload = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.e30.ifKf3w8rhwcKRxIzyxGaOekEm_HxrC4ZogAzqAkXG2O4tPWbSQWVy8sFM9jKxzzoCwOClgJDRjIEYP8qQRZJLEDoae2wYDWUb8oLP9Hw8ENPtNv6FB28Sc_e4NI5OpYN0YOSopUuqFqZFf88Ma7h2tby_puuzP1BUuqECFZUftU5bW8cvGuJsERmx8-y3CULN87ctx9av9qLrnQ_r91zXlyWkmEaV1jLlZltbm9QGHVf16Q4_d0F2poqroywczjZPoWihU8vJelKL5Su-rjX7dNd7nc3ItmnXzF5qoN4yDHsECidgGWbiReAhO150o6_-1M4TAwxW7ijGqL8wpBc_w';

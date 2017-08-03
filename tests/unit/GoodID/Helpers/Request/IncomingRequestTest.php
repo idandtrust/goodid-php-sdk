@@ -63,43 +63,6 @@ class IncomingRequestTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itHasAnEmptyOriginByDefault()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'GET';
-
-        $request = new IncomingRequest();
-
-        $this->assertEquals('', $request->getOrigin());
-    }
-
-    /**
-     * @test
-     */
-    public function itExtractsOriginFromGetRequest()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'GET';
-        $_GET['request_origin'] = 'some-origin';
-
-        $request = new IncomingRequest();
-
-        $this->assertEquals('some-origin', $request->getOrigin());
-    }
-
-    /**
-     * @test
-     */
-    public function itExtractsOriginFromPostRequest()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-
-        $request = new IncomingRequest($this->getMockInput('{"request_origin": "some-origin"}'));
-
-        $this->assertEquals('some-origin', $request->getOrigin());
-    }
-
-    /**
-     * @test
-     */
     public function itReturnsEmptyStringForNonExistentParams()
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';

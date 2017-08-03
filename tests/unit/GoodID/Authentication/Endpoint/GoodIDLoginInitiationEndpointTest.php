@@ -75,7 +75,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
         $ep = $this->buildEndpoint($request);
         $url = $ep->buildRedirectionURL();
 
-        $this->assertEquals('endpoint-uri?client_id=some-client-id&pairing_nonce=some-nonce-value&state=mock-state-value', $url);
+        $this->assertEquals('fast-endpoint-uri?client_id=some-client-id&pairing_nonce=some-nonce-value&state=mock-state-value&display=mobile', $url);
     }
 
     private function buildEndpoint(IncomingRequest $request)
@@ -88,6 +88,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
         $mockStateNonceHandler->method('generateState')->willReturn('mock-state-value');
         $mockServerConfig = $this->createMock(GoodIDServerConfig::class);
         $mockServerConfig->method('getAuthorizationEndpointUri')->willReturn('endpoint-uri');
+        $mockServerConfig->method('getFastAuthorizationEndpointUri')->willReturn('fast-endpoint-uri');
 
         return new GoodIDLoginInitiationEndpoint(
             $request,

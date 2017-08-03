@@ -125,10 +125,16 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
     {
         $requestUrl = $this->buildRequestUrl();
 
-        header('Content-Type: application/json');
+        if ($this->incomingRequest->getMethod() === 'GET') {
+            header('Location: ' . $requestUrl);
+        } elseif ($this->incomingRequest->getMethod() === 'POST') {
+            header('Content-Type: application/json');
 
-        echo json_encode([
-            "authUrl" => $requestUrl
-        ]);
+            echo json_encode([
+                "authUrl" => $requestUrl
+            ]);
+        } else {
+            throw new GoodIDException('Unsupported http request method: ' . $this->incomingRequest->getMethod());
+        }
     }
 }

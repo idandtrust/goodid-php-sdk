@@ -73,11 +73,11 @@ final class GoodIDEndpointFactory
 
         $incomingRequest = $incomingRequest ?: new IncomingRequest();
         $requestMethod = $incomingRequest->getMethod();
-        $requestOrigin = $incomingRequest->getOrigin();
+        $display = $incomingRequest->getStringParameter('display');
         $sessionDataHandler = $serviceLocator->getSessionDataHandler();
         $stateNonceHandler = $serviceLocator->getStateNonceHandler();
 
-        if ($requestMethod === 'GET' && $requestOrigin === 'app') {
+        if ($requestMethod === 'GET' && $display === 'mobile') {
             return new GoodIDLoginInitiationEndpoint(
                 $incomingRequest,
                 $clientId,
@@ -90,7 +90,7 @@ final class GoodIDEndpointFactory
                 $sessionDataHandler,
                 $stateNonceHandler
             );
-        } elseif ($requestMethod === 'POST' && $requestOrigin === 'browser') {
+        } elseif (in_array($requestMethod, ['GET', 'POST']) && in_array($display, ['page', 'popup'])) {
             return new GoodIDRequestBuilderEndpoint(
                 $incomingRequest,
                 $clientId,

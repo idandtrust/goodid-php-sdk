@@ -204,6 +204,41 @@ $jwt = $requestObject->generateJwt(
 echo $jwt;
 ```
 
+### Generating the content of your JWKs URI
+Your JWKs URI is an endpoint, which contains a JWKSet, which is a set of JSON Web Keys in JSON format.
+You have to store your signing and encryption public keys on the JWKs URI,
+to make it easily available in the app-initiated login flow (e.g. Providers Screen).
+
+If you don't have a JWKs URI yet, you can generate its content like this:
+
+```php
+use GoodID\Helpers\Key\JwkSetGenerator;
+use GoodID\Helpers\Key\RSAPublicKey;
+
+$sigKey = new RSAPublicKey("The content of your sig.pub as a string");
+$encKey = new RSAPublicKey("The content of your enc.pub as a string");
+$jwkSetGenerator = new JwkSetGenerator();
+$jwksUriContent = $jwkSetGenerator->generateJwksUriContent($sigKey, $encKey);
+```
+
+If you have an existing JWKs URI, and you would like to add more keys to it, you can do it as described below.
+`$jwksUriContent` will contain the old keys from your existing JWKs URI and the new keys passed in the parameters too.
+
+```php
+use GoodID\Helpers\Key\JwkSetGenerator;
+use GoodID\Helpers\Key\RSAPublicKey;
+
+$sigKey = new RSAPublicKey("The content of your sig.pub as a string");
+$encKey = new RSAPublicKey("The content of your enc.pub as a string");
+$jwkSetGenerator = new JwkSetGenerator();
+$jwksUriContent = $jwkSetGenerator->generateJwksUriContent(
+    $sigKey,
+    $encKey,
+    'https://your-url.com/jwksuri.json'
+);
+```
+
+
 ### Using a picture returned in the `picture_data` claim
 
 This is only interesting to you if you requested a picture from the user.

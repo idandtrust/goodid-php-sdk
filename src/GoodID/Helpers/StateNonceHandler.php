@@ -25,6 +25,7 @@
 namespace GoodID\Helpers;
 
 use GoodID\Exception\ValidationException;
+use GoodID\Helpers\TotpValidator;
 
 /**
  * StateNonceHandler class
@@ -33,18 +34,46 @@ use GoodID\Exception\ValidationException;
 class StateNonceHandler
 {
     /**
+     * Length of a normal nonce
+     * About 16 bytes entropy (in "base62")
+     */
+    const NORMAL_NONCE_LENGTH = 22;
+
+    /**
+     * Length of a TOTP nonce
+     * 20 bytes entropy (in base64), plus one "mode character"
+     */
+    const TOTP_NONCE_LENGTH = 29;
+
+    /**
+     * Normal TOTP nonce validation mode
+     */
+    const TOTP_NONCE_VALIDATION_MODE_NORMAL = 'N';
+
+    /**
+     * Convenient TOTP nonce validation mode
+     */
+    const TOTP_NONCE_VALIDATION_MODE_CONVENIENT = 'C';
+
+    /**
      * @var SessionDataHandler
      */
     private $sessionDataHandler;
+
+    /**
+     * @var TotpValidator
+     */
+    private $totpValidator;
 
     /**
      * Construct
      *
      * @param SessionDataHandler $sessionDataHandler
      */
-    public function __construct(SessionDataHandler $sessionDataHandler)
+    public function __construct(SessionDataHandler $sessionDataHandler, TotpValidator $totpValidator)
     {
         $this->sessionDataHandler = $sessionDataHandler;
+        $this->totpValidator = $totpValidator;
     }
 
     /**
@@ -54,7 +83,7 @@ class StateNonceHandler
      */
     public function generateState()
     {
-        $random = RandomStringGenerator::getPseudoRandomString(32);
+        $random = RandomStringGenerator::getPseudoRandomString(self::NORMAL_NONCE_LENGTH);
         $this->sessionDataHandler->set(SessionDataHandler::SESSION_KEY_STATE, $random);
 
         return $random;
@@ -72,11 +101,11 @@ class StateNonceHandler
     public function validateState($receivedState)
     {
         $storedState = $this->sessionDataHandler->get(SessionDataHandler::SESSION_KEY_STATE);
+        $this->sessionDataHandler->remove(SessionDataHandler::SESSION_KEY_STATE);
 
         if (!$storedState || $receivedState !== $storedState) {
             return false;
         }
-        $this->sessionDataHandler->remove(SessionDataHandler::SESSION_KEY_STATE);
 
         return true;
     }
@@ -88,7 +117,7 @@ class StateNonceHandler
      */
     public function generateNonce()
     {
-        $random = RandomStringGenerator::getPseudoRandomString(32);
+        $random = RandomStringGenerator::getPseudoRandomString(self::NORMAL_NONCE_LENGTH);
         $this->sessionDataHandler->set(SessionDataHandler::SESSION_KEY_NONCE, $random);
 
         return $random;
@@ -98,21 +127,33 @@ class StateNonceHandler
      * Validate Nonce
      *
      * @param string $receivedNonce Received Nonce
+     * @param string $clientSecret RP Client Secret
+     * @param int $currentGoodIDTime Current Time of GoodID Server
+     * @param int $issuedAtTime ID Token issuance time
      *
      * @return bool isValid
      *
      * @throws ValidationException on error
      */
-    public function validateNonce($receivedNonce)
+    public function validateNonce($receivedNonce, $clientSecret, $currentGoodIDTime, $issuedAtTime)
     {
         $storedNonce = $this->sessionDataHandler->get(SessionDataHandler::SESSION_KEY_NONCE);
-
-        if (!$storedNonce || $receivedNonce !== $storedNonce) {
-            return false;
-        }
-
         $this->sessionDataHandler->remove(SessionDataHandler::SESSION_KEY_NONCE);
 
-        return true;
+        if (strlen($receivedNonce) === self::NORMAL_NONCE_LENGTH) {
+            return $storedNonce && $receivedNonce === $storedNonce;
+        } elseif (strlen($receivedNonce) === self::TOTP_NONCE_LENGTH) {
+            $mode = substr($receivedNonce, -1);
+            $totpValue = substr($receivedNonce, 0, -1);
+            if ($mode === self::TOTP_NONCE_VALIDATION_MODE_NORMAL) {
+                return $this->totpValidator->isValid($clientSecret, $totpValue, $currentGoodIDTime);
+            } elseif ($mode === self::TOTP_NONCE_VALIDATION_MODE_CONVENIENT) {
+                return $this->totpValidator->isValid($clientSecret, $totpValue, $issuedAtTime);
+            } else {
+                throw new ValidationException('Invalid nonce validation mode');
+            }
+        } else {
+            throw new ValidationException('The nonce has invalid length');
+        }
     }
 }

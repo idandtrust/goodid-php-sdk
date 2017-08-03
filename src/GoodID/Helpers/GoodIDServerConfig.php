@@ -62,6 +62,14 @@ class GoodIDServerConfig
     }
 
     /**
+     * @return string GoodID Fast Authorization Endpoint URI
+     */
+    public function getFastAuthorizationEndpointUri()
+    {
+        return $this->getIdpUri() . '/fast/authorize';
+    }
+
+    /**
      * @return string GoodID Token Endpoint URI
      */
     public function getTokenEndpointUri()

@@ -166,7 +166,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
-        $validator->validateIdToken($this->idTokenJwsWithoutExpiration, $this->serverTime);
+        $validator->validateIdToken($this->idTokenJwsWithoutExpiration, 'dummy-client-secret', $this->serverTime);
     }
 
     /**
@@ -183,7 +183,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
-        $validator->validateIdToken($this->expiredIdTokenJws, $this->serverTime);
+        $validator->validateIdToken($this->expiredIdTokenJws, 'dummy-client-secret', $this->serverTime);
     }
 
     /**
@@ -200,7 +200,58 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
-        $validator->validateIdToken($this->idTokenJwsWithExpirationTooFar, $this->serverTime);
+        $validator->validateIdToken($this->idTokenJwsWithExpirationTooFar, 'dummy-client-secret', $this->serverTime);
+    }
+
+     /**
+     * @test
+     * @expectedException \GoodID\Exception\ValidationException
+     * @expectedExceptionMessage Invalid issuance time.
+     */
+    public function idtokenValidationFailsIfIatIsMissing()
+    {
+        $serverConfig = $this->createMock(GoodIDServerConfig::class);
+        $serverConfig->method('getIssuerUri')
+            ->willReturn('My server');
+        $stateNonceHandler = $this->createMock(StateNonceHandler::class);
+
+        $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
+
+        $validator->validateIdToken($this->idTokenJwsWithoutIat, 'dummy-client-secret', $this->serverTime);
+    }
+
+    /**
+     * @test
+     * @expectedException \GoodID\Exception\ValidationException
+     * @expectedExceptionMessage Invalid issuance time.
+     */
+    public function idtokenValidationFailsIfIatIsInFuture()
+    {
+        $serverConfig = $this->createMock(GoodIDServerConfig::class);
+        $serverConfig->method('getIssuerUri')
+            ->willReturn('My server');
+        $stateNonceHandler = $this->createMock(StateNonceHandler::class);
+
+        $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
+
+        $validator->validateIdToken($this->idTokenJwsWithIatInFuture, 'dummy-client-secret', $this->serverTime);
+    }
+
+    /**
+     * @test
+     * @expectedException \GoodID\Exception\ValidationException
+     * @expectedExceptionMessage Invalid issuance time.
+     */
+    public function idtokenValidationFailsIfIatIsTooEarly()
+    {
+        $serverConfig = $this->createMock(GoodIDServerConfig::class);
+        $serverConfig->method('getIssuerUri')
+            ->willReturn('My server');
+        $stateNonceHandler = $this->createMock(StateNonceHandler::class);
+
+        $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
+
+        $validator->validateIdToken($this->idTokenJwsWithTooEarlyIat, 'dummy-client-secret', $this->serverTime);
     }
 
     /**
@@ -219,7 +270,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
-        $validator->validateIdToken($this->idTokenJws, $this->serverTime);
+        $validator->validateIdToken($this->idTokenJws, 'dummy-client-secret', $this->serverTime);
     }
 
     /**
@@ -236,7 +287,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
-        $idToken = $validator->validateIdToken($this->idTokenJws, $this->serverTime);
+        $idToken = $validator->validateIdToken($this->idTokenJws, 'dummy-client-secret', $this->serverTime);
         $this->assertTrue(is_array($idToken));
         $this->assertArrayHasKey('iss', $idToken);
     }
@@ -255,7 +306,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
-        $idToken = $validator->validateIdToken($this->idTokenJwsWithClaims, $this->serverTime);
+        $idToken = $validator->validateIdToken($this->idTokenJwsWithClaims, 'dummy-client-secret', $this->serverTime);
         $this->assertTrue(is_array($idToken));
         $this->assertArrayNotHasKey('claims', $idToken);
     }
@@ -297,6 +348,9 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
     private $idTokenJwsWithoutExpiration = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6Il8xQWtpaHpuYVN2YU4zX19pLVk5LS1WX3dnOTlJM3VBNlZoR1pjZjhnNDAiLCJpYXQiOjE0OTk4NzIzODMsIm5iZiI6MTQ5OTg3MjM4Mywic3ViX2p3ayI6eyJrdHkiOiJFQyIsInVzZSI6InNpZyIsImNydiI6IlAtMjU2IiwieCI6IkZqbXJDdlNTS2FrYTl5RUUxSGwzZTBfd1d0SVZEUkMzYklhMFkyNms0NUUiLCJ5IjoiNkg0WklfbXlwLXFQY0FhODVnS0g2SmJyb08zYmV1aUhBLVNuUW9PY04zcyIsImFsZyI6IkVTMjU2In19.WwS5VSOq-e7y3zQSI2Ujrx3mmmfCR3e90yOOYUHX_dBb7LFvuO95hpdoJDFt84jJTsgiqRY1u9DN-WSS_58jjg';
     private $expiredIdTokenJws = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6Il9KUUg3STdiWDYyRUI0T2oxZVpMZVNCZklSR2ppbThmUVVaOE5JZXlmRTAiLCJleHAiOjE0OTk4NzIzODIsImlhdCI6MTQ5OTg3MjM4MywibmJmIjoxNDk5ODcyMzgzLCJzdWJfandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJ4IjoiVjF1Sk9YZ0REQVVpNnhIVTFPSWFSOGd0ckJIdklacVJmVnpDNUJ3QmNsYyIsInkiOiJWWHpkLTlIcUljTGFIS3ozV1hiRzJod29TUjc1NHpHREFiOU5RWkcwTVBZIiwiYWxnIjoiRVMyNTYifX0.7k8fSbyByipAYDgxMQv0ewHXe5E0VYL1Tez9Vugyy8JKLD8f4g8oqJldEqUr9S7UlP5uKNyGBWGU2BcBucgdgQ';
     private $idTokenJwsWithExpirationTooFar = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6ImlXc3AzeEF4djdla29VaXN1US1TSDYtYjI5ZENDWVREczNOeFB3bF84MFEiLCJleHAiOjE1MDUxNDYzODMsImlhdCI6MTQ5OTg3MjM4MywibmJmIjoxNDk5ODcyMzgzLCJzdWJfandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJ4IjoiX2NubmNwNjJMLTFfRkIybTRWQUVRNjd4UWJDTnV4OU0tUU1acndPSFc1byIsInkiOiJOX3VieC1rQ09STGtMZ0Qzay1yWnJMeU1mMEVGZ2NvVHhKYjRqLUx5eHBZIiwiYWxnIjoiRVMyNTYifX0.vUslOdXFtgXRKIQ0GtaNOZYJIFKqCd-2Ad-ih8rfEIGLeAf-pu9tdVsVsSiFpvJy6L5ZLsDXCYveWWKZpdksiw';
+    private $idTokenJwsWithoutIat = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6IlhuMFZPQVFCTTNrTVZvQXNROHd4NFFwZzhGdDlRYmdRalA4SG5BNFNxYlUiLCJleHAiOjE0OTk4NzU5ODMsIm5iZiI6MTQ5OTg3MjM4Mywic3ViX2p3ayI6eyJrdHkiOiJFQyIsInVzZSI6InNpZyIsImNydiI6IlAtMjU2IiwieCI6ImFJU0JqblZJM2Y4VzBwb0tCaU9nV21YZ1RBMEY0aXRud2w2M2FrQUVITjgiLCJ5IjoiazNlWi1uWm1GOE0wVHk0c3ROMXFfYjk4b1BiNk1uZDVDTFVBSkdjRkFNYyIsImFsZyI6IkVTMjU2In0sIm5vbmNlIjoibm9uY2UgdmFsdWUiLCJjbGFpbXMiOnsiZW1haWwiOiJlbWFpbEBleGFtcGxlLnRsZCJ9fQ.7ecDqLxme5kg-1rUqT7b_ijRVxIm8MjrfmFkqZ3HgNuyY9MDkgEqieDNkjNXT1G8B8SqNGU5lRyvySXRSbTyaA';
+    private $idTokenJwsWithIatInFuture = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6IkYzS24wRlBvbGh3MnJsQ0FRVjJWSmJuWW40Ul9wemtFcXNIZVBsV0VUUHciLCJleHAiOjE0OTk4NzU5ODMsImlhdCI6MTQ5OTg3MjM4NCwibmJmIjoxNDk5ODcyMzgzLCJzdWJfandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJ4IjoibjBHajdZTUUzMGxkdjBfd1U1ajZfR1A4VVdlUUd2bUdmRGs3ZkJiSUxqSSIsInkiOiJMQmQ4NHExM3F4Z1Awc3VtNVNISDMxWHZJNWpfandlNmJzbFRvODRCZU5BIiwiYWxnIjoiRVMyNTYifSwibm9uY2UiOiJub25jZSB2YWx1ZSIsImNsYWltcyI6eyJlbWFpbCI6ImVtYWlsQGV4YW1wbGUudGxkIn19.UxjiioJ4aMKAyW3EPDtaoQC2huf0jZvBEKnDwvCyX5Bhzvev1vg9PzToDIKhuk7D3J3wnx01fp2kMc_AQONThw';
+    private $idTokenJwsWithTooEarlyIat = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6InFsazgxN1BGNzlNbDVjTDlvVTBTQ0UzTDBTT2ZqOXZseHN0eEVUOHltcGciLCJleHAiOjE0OTk4NzU5ODMsImlhdCI6MTQ5NDYwMTk4MywibmJmIjoxNDk5ODcyMzgzLCJzdWJfandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJ4IjoiM0ExZnVOZC1MOEw3MklYMXZpVkp2MklTc29wVFlDU2M2aXc4X1VxNVhQMCIsInkiOiIyUXItNU1oWVYzVHlGcmhXbWpEWml5WVNvUWplMGtmMlliLU5Tbk1GZUw0IiwiYWxnIjoiRVMyNTYifSwibm9uY2UiOiJub25jZSB2YWx1ZSIsImNsYWltcyI6eyJlbWFpbCI6ImVtYWlsQGV4YW1wbGUudGxkIn19.uGFKhERsKccg7bs3_kBGzgHSAJcGgU_1ReivU45k699-y9d_qphZwErjhQApm0yDVEBYFIh2VVHUCePXpItMpA';
     private $idTokenJws = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6Im1peGI1Sm5xZExoX2VTZXBoMnZvTlVsOS1jUXY5VFJqQko4eFNrdVY4TnciLCJleHAiOjE0OTk4NzU5ODMsImlhdCI6MTQ5OTg3MjM4MywibmJmIjoxNDk5ODcyMzgzLCJzdWJfandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJ4IjoiTGlQeG5sOUJqWFpEMjV1djNQSTI5Y0VKaHloMUdxcV8yZi1yNkFCVlFGRSIsInkiOiJlYmRoN25JTk5BV3d3bUY1X0pPdThEOVpzVXBNZThMaFByQlBXZUpsaE53IiwiYWxnIjoiRVMyNTYifSwibm9uY2UiOiJub25jZSB2YWx1ZSJ9.u-mhu6ysehF1f-yb9pxnEfmceAqNM93Kxm4bO-JFqIr5-X8171vSiWTNgibnAZv1Qobh8DcKHAB1fK9pCtY_WQ';
     private $idTokenJwsWithClaims = 'eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJNeSBzZXJ2ZXIiLCJhdWQiOiJZb3VyIGNsaWVudCIsInN1YiI6IjgtcjI2clZ3ZTFqYzhmRkhneXZHM1RsVDNNMVZHaFpJVnFMaFNDOUdOZEEiLCJleHAiOjE0OTk4NzU5ODMsImlhdCI6MTQ5OTg3MjM4MywibmJmIjoxNDk5ODcyMzgzLCJzdWJfandrIjp7Imt0eSI6IkVDIiwidXNlIjoic2lnIiwiY3J2IjoiUC0yNTYiLCJ4IjoiZVV2VmdHd2VWZ2hnNkRPbS1haTRXLTRaMmNKRTFaSE1wLWVuelIzUnBiSSIsInkiOiJ0NWZzU0prY0RTMVE0N29Sby11TWhoQ1RWRTZkSzVUMkg3U0lCNlkwT2o0IiwiYWxnIjoiRVMyNTYifSwibm9uY2UiOiJub25jZSB2YWx1ZSIsImNsYWltcyI6eyJlbWFpbCI6ImVtYWlsQGV4YW1wbGUudGxkIn19.r_gH7Hkk6pLUb0Gx1ykRmwEH3iW0ioASmTz3nO5iD8NTCEYRiTonObZiVmMKxN6iAWKaOHBs51OP8CBennMiew';
 }
