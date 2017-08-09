@@ -72,6 +72,8 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
      * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
+     *    If $this->claims already has acr, then the requested acr value will be
+     *    the maximum of $claims['id_token']['acr']['value'] and $acr.
      *
      * @return string JWT
      *
@@ -88,6 +90,8 @@ class OpenIDRequestObject implements OpenIDRequestSource
             throw new GoodIDException("Invalid ACR: " . $acr);
         }
 
+        $this->claims = $this->addAcr($this->claims, $acr);
+
         $array = [
             'iss' => $clientId,
             'aud' => $goodIdServerConfig->getAudienceUri(),
@@ -95,13 +99,42 @@ class OpenIDRequestObject implements OpenIDRequestSource
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'scope' => self::SCOPE_OPENID,
-            'acr' => $acr,
             'claims' => $this->emptyArrayToObjectRecursive($this->claims)
         ];
 
         $jwt = $sigKey->signAsCompactJws($array);
 
         return $jwt;
+    }
+
+    /**
+     * Add acr to claims
+     *
+     * @param array $claims Claims
+     * @param int $acr ACR @uses Acr::LEVEL_*
+     *
+     * @return array Claims
+     */
+    private function addAcr(array $claims, $acr)
+    {
+        if (!isset($claims['id_token'])) {
+            $claims['id_token'] = [];
+        }
+
+        if (!isset($claims['id_token']['acr'])) {
+            $claims['id_token']['acr'] = [];
+        }
+
+        if (isset($claims['id_token']['acr']['value'])) {
+            $claims['id_token']['acr']['value'] = max([
+                $claims['id_token']['acr']['value'],
+                $acr
+            ]);
+        } else {
+            $claims['id_token']['acr']['value'] = $acr;
+        }
+
+        return $claims;
     }
 
     /**

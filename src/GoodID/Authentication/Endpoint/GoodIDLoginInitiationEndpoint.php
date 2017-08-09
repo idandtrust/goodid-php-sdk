@@ -65,11 +65,11 @@ class GoodIDLoginInitiationEndpoint extends AbstractGoodIDEndpoint
 
         $this->sessionDataHandler->set(
             SessionDataHandler::SESSION_KEY_USED_REQUEST_URI,
-            urldecode($requestUri));
+            $requestUri);
 
         $this->sessionDataHandler->set(
             SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI,
-            urldecode($redirectUri));
+            $redirectUri);
 
         $state = $this->stateNonceHandler->generateState();
 

@@ -85,7 +85,7 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itGeneratesJwt()
+    public function itGeneratesJwtWhenAcrIsNotInClaims()
     {
         $request = new OpenIDRequestObject([
             'id_token' => [],
@@ -112,9 +112,112 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
                 'client_id' => 'a-client-id',
                 'redirect_uri' => 'https://a.redirect.url',
                 'scope' => 'openid',
-                'acr' => Acr::LEVEL_1,
                 'claims' => [
-                    'id_token' => [],
+                    'id_token' => [
+                        'acr' => [
+                            'value' => Acr::LEVEL_1
+                        ]
+                    ],
+                    'userinfo' => [
+                        'sub' => 'some-subject-id',
+                        'name' => 'John Doe',
+                    ]
+                ],
+            ],
+            $payload
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itGeneratesJwtWhenAcrIsInClaims1()
+    {
+        $request = new OpenIDRequestObject([
+            'id_token' => [
+                'acr' => [
+                    'value' => Acr::LEVEL_1
+                ]
+            ],
+            'userinfo' => [
+                'sub' => 'some-subject-id',
+                'name' => 'John Doe',
+            ]
+        ]);
+        $signingKey = new RSAPrivateKey($this->privateKey);
+        $serverConfig = $this->createMock(GoodIDServerConfig::class);
+        $serverConfig->method('getAudienceUri')
+            ->willReturn('https://server.audience.uri');
+
+        $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_2);
+        $this->assertEquals($this->jwtWithAcr2, $jwt);
+
+        $pubKey = new RSAPublicKey($this->publicKey);
+        $payload = $pubKey->verifyCompactJws($jwt);
+        $this->assertEquals(
+            [
+                'iss' => 'a-client-id',
+                'aud' => 'https://server.audience.uri',
+                'response_type' => 'code',
+                'client_id' => 'a-client-id',
+                'redirect_uri' => 'https://a.redirect.url',
+                'scope' => 'openid',
+                'claims' => [
+                    'id_token' => [
+                        'acr' => [
+                            'value' => Acr::LEVEL_2
+                        ]
+                    ],
+                    'userinfo' => [
+                        'sub' => 'some-subject-id',
+                        'name' => 'John Doe',
+                    ]
+                ],
+            ],
+            $payload
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function itGeneratesJwtWhenAcrIsInClaims2()
+    {
+        $request = new OpenIDRequestObject([
+            'id_token' => [
+                'acr' => [
+                    'value' => Acr::LEVEL_2
+                ]
+            ],
+            'userinfo' => [
+                'sub' => 'some-subject-id',
+                'name' => 'John Doe',
+            ]
+        ]);
+        $signingKey = new RSAPrivateKey($this->privateKey);
+        $serverConfig = $this->createMock(GoodIDServerConfig::class);
+        $serverConfig->method('getAudienceUri')
+            ->willReturn('https://server.audience.uri');
+
+        $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_1);
+        $this->assertEquals($this->jwtWithAcr2, $jwt);
+
+        $pubKey = new RSAPublicKey($this->publicKey);
+        $payload = $pubKey->verifyCompactJws($jwt);
+        $this->assertEquals(
+            [
+                'iss' => 'a-client-id',
+                'aud' => 'https://server.audience.uri',
+                'response_type' => 'code',
+                'client_id' => 'a-client-id',
+                'redirect_uri' => 'https://a.redirect.url',
+                'scope' => 'openid',
+                'claims' => [
+                    'id_token' => [
+                        'acr' => [
+                            'value' => Acr::LEVEL_2
+                        ]
+                    ],
                     'userinfo' => [
                         'sub' => 'some-subject-id',
                         'name' => 'John Doe',
@@ -165,5 +268,6 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
 4HynUkRp/eyNXxA8kK0LOAxiUJyQAj1MjNcO3TWH4gO/w1kTbTNRjdQ=
 -----END RSA PRIVATE KEY-----';
 
-    private $jwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOlwvXC9zZXJ2ZXIuYXVkaWVuY2UudXJpIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbGllbnRfaWQiOiJhLWNsaWVudC1pZCIsInJlZGlyZWN0X3VyaSI6Imh0dHBzOlwvXC9hLnJlZGlyZWN0LnVybCIsInNjb3BlIjoib3BlbmlkIiwiYWNyIjoxLCJjbGFpbXMiOnsiaWRfdG9rZW4iOnt9LCJ1c2VyaW5mbyI6eyJzdWIiOiJzb21lLXN1YmplY3QtaWQiLCJuYW1lIjoiSm9obiBEb2UifX19.daABDyDApOOQW1CvfNu7gwtBEC9CzyVcE9f29eRyhRsyposYaGzKzib_qJ3BN_QQMkLhOC5dciXq-ep62wBBZ40ncMJw31yYYUv9LLV2o7Ay7XW664K4ejdZbik4j0L4q3MlT3XNWUYBhGZe6PDiScsGem7NX6tPmSgg9s2Y50pgEIYeDS8L1XgqgKRztwCix8bW2u6ZrLfoq1wCGx-3VnwYrwPD9hDp8zSmfLAqd1E3GRgHbt0QBVKLWTh1Gadf4AoMxA8xdcjBs_9lNIEdkILuvBLFfiQG44KLM2m5w3xP-iZWHsuY6i07dMFu9jMAgmvrKPbbupQa4HAVwXkHbQ';
+    private $jwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOlwvXC9zZXJ2ZXIuYXVkaWVuY2UudXJpIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbGllbnRfaWQiOiJhLWNsaWVudC1pZCIsInJlZGlyZWN0X3VyaSI6Imh0dHBzOlwvXC9hLnJlZGlyZWN0LnVybCIsInNjb3BlIjoib3BlbmlkIiwiY2xhaW1zIjp7ImlkX3Rva2VuIjp7ImFjciI6eyJ2YWx1ZSI6MX19LCJ1c2VyaW5mbyI6eyJzdWIiOiJzb21lLXN1YmplY3QtaWQiLCJuYW1lIjoiSm9obiBEb2UifX19.I3V5vMfN6l5GYHbqIiC5gEfMbmzjDZsECDA1uaND9ywkoqlGB_Ryob93WyMB2DV_WexEqfNwxKxNzAbf_H-1l45K6gqYb7LmgfaSnY3M7sHo9aMelw5_nA8R6KroBXxC_EynhrBfFYpHfCVBtZHUR7yPSXhrrSQLH2HX1yfJ-xf1BIVk1049T1bvDGsHsHlWA79Uj-HpsZzrEvvXNU-XMg9_MxTE600OmbcLlGnCR_NLr9ZuA-8cGRCx8JcER2BuxWbGVkgV3FDOfUcp42Vye1QbLATSMad3kO_rsMKfuWiA-Pj_Q3ornVfOq785VEyCnD2Y43UHlpOc0i5GHUKDAA';
+    private $jwtWithAcr2 = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOlwvXC9zZXJ2ZXIuYXVkaWVuY2UudXJpIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbGllbnRfaWQiOiJhLWNsaWVudC1pZCIsInJlZGlyZWN0X3VyaSI6Imh0dHBzOlwvXC9hLnJlZGlyZWN0LnVybCIsInNjb3BlIjoib3BlbmlkIiwiY2xhaW1zIjp7ImlkX3Rva2VuIjp7ImFjciI6eyJ2YWx1ZSI6Mn19LCJ1c2VyaW5mbyI6eyJzdWIiOiJzb21lLXN1YmplY3QtaWQiLCJuYW1lIjoiSm9obiBEb2UifX19.YttRLe206z7OO_xWYjg9ZQCJhXFcXK9rqLSuOCobdmpeX875f43lXYoZp9FcNMIBdvzJ13Vs9ov2EdocIjVo1tBhFDHH5PJVQLCwHg2IV9XAbdTAIZMTGqDwj_7YnX6OaoIdQPIpBSjOxD1YliN8dYfCWUEOSwI-3yMnsSwaG-at-E6_F6j9mKKzzQyuNcMwWU0Uz9WD28D5Py6mDL0h5xFyA4cmV-H5oNz-uEzmkeHWfXjYDMIOs7PYqI7R-oyPzEHJakYYcdngZLS3JmiZPBBKDY1YtsBja-8SCE2lGqryTk81FsjszP6SKR3H70EGZaqRkJlmSmPZ9bv3ofpQew';
 }

@@ -191,8 +191,9 @@ When a sign in process starts from the GoodID app we will get the request signed
 It can be generated as follows:
 
 ```php
-use GoodID\Helpers\GoodIDServerConfig;
+use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
+use GoodID\ServiceLocator;
 
 $requestObject = new OpenIDRequestObject("Your claimset as a JSON string");
 $jwt = $requestObject->generateJwt(

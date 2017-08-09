@@ -49,6 +49,10 @@ final class GoodIDEndpointFactory
      * @param OpenIDRequestSource $requestSource An object representing the source of the request object
      * @param string $redirectUri The redirect URI that will be used at normal sign-ins
      * @param int $acr The ACR level of assurance required at normal sign-ins, @uses Acr::LEVEL_*
+     *    This value has no effect when an OpenIDRequestObjectJWT or an OpenIDRequestURI is used,
+     *    as they already have acr values embedded in them.
+     *    When using an OpenIDRequestObject with $claims already having acr,
+     *    the requested acr value will be the maximum of $claims['id_token']['acr']['value'] and $acr.
      * @param IncomingRequest|null $incomingRequest
      *
      * @return AbstractGoodIDEndpoint
