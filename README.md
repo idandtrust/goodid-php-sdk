@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/idandtrust/goodid-php-sdk.svg?branch=master)](https://travis-ci.org/idandtrust/goodid-php-sdk)
+
 # GoodID SDK for PHP
 
 This repository contains our open source PHP SDK that allows you to collect, decrypt and verify the data that you receive from the user.
