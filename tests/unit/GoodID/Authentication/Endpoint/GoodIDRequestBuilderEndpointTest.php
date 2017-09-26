@@ -83,6 +83,67 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @expectedException \GoodID\Exception\GoodIDException
+     * @expectedExceptionMessage maxAge must be null or an int in the range [3600, 5184000]
+     */
+    public function itFailsIfMaxAgeIsNotInt()
+    {
+        $request = new MockIncomingRequest([
+            'endpoint_uri' => 'https://some.endpoint.uri',
+            'current_url' => 'https://current.url',
+            'display' => 'page',
+        ]);
+
+        $requestSource = $this->createMock(OpenIDRequestURI::class);
+        $requestSource->method('getRequestUri')
+            ->willReturn('https://some.request.uri');
+
+        $this->buildEndpoint($request, $requestSource, 1.0);
+    }
+
+    /**
+     * @test
+     * @expectedException \GoodID\Exception\GoodIDException
+     * @expectedExceptionMessage maxAge must be null or an int in the range [3600, 5184000]
+     */
+    public function itFailsIfMaxAgeIsTooSmall()
+    {
+        $request = new MockIncomingRequest([
+            'endpoint_uri' => 'https://some.endpoint.uri',
+            'current_url' => 'https://current.url',
+            'display' => 'page',
+        ]);
+
+        $requestSource = $this->createMock(OpenIDRequestURI::class);
+        $requestSource->method('getRequestUri')
+            ->willReturn('https://some.request.uri');
+
+        $this->buildEndpoint($request, $requestSource, 3599);
+    }
+
+    /**
+     * @test
+     * @expectedException \GoodID\Exception\GoodIDException
+     * @expectedExceptionMessage maxAge must be null or an int in the range [3600, 5184000]
+     */
+    public function itFailsIfMaxAgeIsTooBig()
+    {
+        $request = new MockIncomingRequest([
+            'endpoint_uri' => 'https://some.endpoint.uri',
+            'current_url' => 'https://current.url',
+            'display' => 'page',
+        ]);
+
+        $requestSource = $this->createMock(OpenIDRequestURI::class);
+        $requestSource->method('getRequestUri')
+            ->willReturn('https://some.request.uri');
+
+        $this->buildEndpoint($request, $requestSource, 5184001);
+    }
+
+
+    /**
+     * @test
      */
     public function itCreatesRequestUrlUsingRequestUri()
     {
@@ -125,7 +186,9 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestObject::class);
-        $requestSource->method('generateJwt')
+        $requestSource->method('toArray')
+            ->willReturn(['a' => 'b']);
+        $requestSource->method('generateFromArray')
             ->willReturn('a-signed-jwt');
 
         $ep = $this->buildEndpoint($request, $requestSource);
@@ -200,16 +263,12 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_EXTERNALLY_INITIATED),
+                    $this->equalTo(SessionDataHandler::SESSION_KEY_APP_INITIATED),
                     $this->equalTo(false)
                 ],
                 [
                     $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
-                ],
-                [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REQUEST_URI),
-                    $this->equalTo('https://some.request.uri')
                 ]
             );
 
@@ -228,19 +287,12 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestObject::class);
-        $requestSource->method('generateJwt')
+        $requestSource->method('toArray')
+            ->willReturn(['a' => 'b']);
+        $requestSource->method('generateFromArray')
             ->willReturn('a-signed-jwt');
 
         $ep = $this->buildEndpoint($request, $requestSource);
-
-        $claims = [
-            'sub' => 'some-subject-id',
-            'name' => 'John Doe',
-        ];
-
-        $requestSource->expects($this->once())
-            ->method('getClaims')
-            ->willReturn($claims);
 
         $this->mockSessionDataHandler->expects($this->once())
             ->method('removeAll');
@@ -248,20 +300,16 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_EXTERNALLY_INITIATED),
+                    $this->equalTo(SessionDataHandler::SESSION_KEY_APP_INITIATED),
                     $this->equalTo(false)
                 ],
                 [
                     $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
-                ],
-                [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_REQUESTED_CLAIMS),
-                    $this->equalTo($claims)
                 ]
             );
 
-        $url = $ep->buildRequestUrl();
+        $ep->buildRequestUrl();
     }
 
     /**
@@ -281,38 +329,25 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
 
         $ep = $this->buildEndpoint($request, $requestSource);
 
-        $claims = [
-            'sub' => 'some-subject-id',
-            'name' => 'John Doe',
-        ];
-
-        $requestSource->expects($this->once())
-            ->method('getClaims')
-            ->willReturn($claims);
-
         $this->mockSessionDataHandler->expects($this->once())
             ->method('removeAll');
         $this->mockSessionDataHandler->expects($this->any())
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_EXTERNALLY_INITIATED),
+                    $this->equalTo(SessionDataHandler::SESSION_KEY_APP_INITIATED),
                     $this->equalTo(false)
                 ],
                 [
                     $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
-                ],
-                [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_REQUESTED_CLAIMS),
-                    $this->equalTo($claims)
                 ]
             );
 
-        $url = $ep->buildRequestUrl();
+        $ep->buildRequestUrl();
     }
 
-    private function buildEndpoint(IncomingRequest $request, OpenIDRequestSource $requestSource = null)
+    private function buildEndpoint(IncomingRequest $request, OpenIDRequestSource $requestSource = null, $maxAge = null)
     {
         $signingKey = $this->createMock(RSAPrivateKey::class);
         $encryptionKey = $this->createMock(RSAPrivateKey::class);
@@ -334,7 +369,8 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             Acr::LEVEL_DEFAULT,
             $mockServerConfig,
             $this->mockSessionDataHandler,
-            $mockStateNonceHandler
+            $mockStateNonceHandler,
+            $maxAge
         );
     }
 

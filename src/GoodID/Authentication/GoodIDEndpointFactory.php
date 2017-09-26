@@ -53,7 +53,9 @@ final class GoodIDEndpointFactory
      *    as they already have acr values embedded in them.
      *    When using an OpenIDRequestObject with $claims already having acr,
      *    the requested acr value will be the maximum of $claims['id_token']['acr']['value'] and $acr.
-     * @param IncomingRequest|null $incomingRequest
+     * @param IncomingRequest|null $incomingRequest Please set to null
+     * @param int|null $maxAge Maximum accepted authentication age
+     *    This value has no effect when an OpenIDRequestObjectJWT or an OpenIDRequestURI is used
      *
      * @return AbstractGoodIDEndpoint
      *
@@ -67,7 +69,8 @@ final class GoodIDEndpointFactory
         OpenIDRequestSource $requestSource,
         $redirectUri,
         $acr = Acr::LEVEL_DEFAULT,
-        IncomingRequest $incomingRequest = null
+        IncomingRequest $incomingRequest = null,
+        $maxAge = null
     ) {
         if (!Acr::isValid($acr)) {
             throw new GoodIDException("Invalid ACR: " . $acr);
@@ -92,7 +95,8 @@ final class GoodIDEndpointFactory
                 $acr,
                 $goodIdServerConfig,
                 $sessionDataHandler,
-                $stateNonceHandler
+                $stateNonceHandler,
+                $maxAge
             );
         } elseif (in_array($requestMethod, ['GET', 'POST']) && in_array($display, ['page', 'popup'])) {
             return new GoodIDRequestBuilderEndpoint(
@@ -105,7 +109,8 @@ final class GoodIDEndpointFactory
                 $acr,
                 $goodIdServerConfig,
                 $sessionDataHandler,
-                $stateNonceHandler
+                $stateNonceHandler,
+                $maxAge
             );
         } else {
             throw new GoodIDException("Unsupported request.");

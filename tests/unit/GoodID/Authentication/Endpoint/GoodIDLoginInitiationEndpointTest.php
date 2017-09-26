@@ -100,7 +100,8 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
             Acr::LEVEL_DEFAULT,
             $mockServerConfig,
             $mockSessionDataHandler,
-            $mockStateNonceHandler
+            $mockStateNonceHandler,
+            null
         );
     }
 }

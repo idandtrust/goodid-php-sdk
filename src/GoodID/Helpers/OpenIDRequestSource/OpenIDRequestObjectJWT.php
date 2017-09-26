@@ -69,12 +69,30 @@ class OpenIDRequestObjectJWT implements OpenIDRequestSource
      */
     public function getClaims(RSAPublicKey $sigPubKey)
     {
+        $array = $this->toArray($sigPubKey);
+
+        if ($array === self::CONTENT_IS_ENCRYPTED) {
+            return self::CONTENT_IS_ENCRYPTED;
+        }
+
+        return isset($array['claims']) ? $array['claims'] : [];
+    }
+
+    /**
+     * Returns the request object as an array if it is not encrypted
+     *
+     * @param RSAPublicKey $sigPubKey The RP signature key (public)
+     *
+     * @return array|string Request Object or self::CONTENT_IS_ENCRYPTED
+     *
+     * @throws GoodIDException on error
+     */
+    public function toArray(RSAPublicKey $sigPubKey)
+    {
         if (JwtUtil::isCompactJwe($this->jwt)) {
             return self::CONTENT_IS_ENCRYPTED;
         } elseif (JwtUtil::isCompactJws($this->jwt)) {
-            $tokenArray = $sigPubKey->verifyCompactJws($this->jwt);
-
-            return isset($tokenArray['claims']) ? $tokenArray['claims'] : [];
+            return $sigPubKey->verifyCompactJws($this->jwt);
         } else {
             throw new GoodIDException("Unsupported JWT format.");
         }

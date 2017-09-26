@@ -26,6 +26,7 @@ namespace GoodID\Authentication\Endpoint;
 
 use GoodID\Exception\GoodIDException;
 use GoodID\Helpers\Config;
+use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObjectJWT;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
@@ -75,11 +76,11 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
             'nonce' => $this->stateNonceHandler->generateNonce(),
             'display' => $display,
             'ui_locales' => $uiLocales,
-            'sdk_version' => Config::GOODID_PHP_SDK_VERSION
+            'sdk_version' => Config::GOODID_PHP_SDK_VERSION,
         ];
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_EXTERNALLY_INITIATED,
+            SessionDataHandler::SESSION_KEY_APP_INITIATED,
             false);
 
         $this->sessionDataHandler->set(
@@ -90,25 +91,29 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
             $queryParams['request_uri'] = $this->requestSource->getRequestUri();
 
             $this->sessionDataHandler->set(
-                SessionDataHandler::SESSION_KEY_USED_REQUEST_URI,
+                SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
                 $this->requestSource->getRequestUri());
         } elseif ($this->requestSource instanceof OpenIDRequestObject) {
-            $queryParams['request'] = $this->requestSource->generateJwt(
-                $this->signingKey,
+            $requestObjectAsArray = $this->requestSource->toArray(
                 $this->clientId,
                 $this->redirectUri,
                 $this->goodIdServerConfig,
-                $this->acr
+                $this->acr,
+                $this->maxAge
             );
 
+            $queryParams['request'] = $this->requestSource->generateFromArray(
+                    $requestObjectAsArray, $this->signingKey);
+
             $this->sessionDataHandler->set(
-                SessionDataHandler::SESSION_KEY_REQUESTED_CLAIMS,
-                $this->requestSource->getClaims($this->signingKey));
+                SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
+                $requestObjectAsArray);
         } elseif ($this->requestSource instanceof OpenIDRequestObjectJWT) {
             $queryParams['request'] = $this->requestSource->getJwt();
+
             $this->sessionDataHandler->set(
-                SessionDataHandler::SESSION_KEY_REQUESTED_CLAIMS,
-                $this->requestSource->getClaims($this->signingKey));
+                SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
+                $this->requestSource->toArray($this->signingKey));
         } else {
             throw new GoodIDException("Unsupported OpenIDRequestSource");
         }

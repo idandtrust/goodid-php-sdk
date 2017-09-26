@@ -60,11 +60,11 @@ class GoodIDLoginInitiationEndpoint extends AbstractGoodIDEndpoint
         }
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_EXTERNALLY_INITIATED,
+            SessionDataHandler::SESSION_KEY_APP_INITIATED,
             true);
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_USED_REQUEST_URI,
+            SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
             $requestUri);
 
         $this->sessionDataHandler->set(

@@ -38,8 +38,9 @@ class Claim
     const NAME_ISSUER = "iss";
     const NAME_SUBJECT = "sub";
     const NAME_AUDIENCE = "aud";
-    const NAME_EXPIRATION_TIME = "exp";
+    const NAME_AUTH_TIME = "auth_time";
     const NAME_ISSUED_AT = "iat";
+    const NAME_EXPIRATION_TIME = "exp";
     const NAME_SUB_JWK = "sub_jwk";
     const NAME_CLAIMS = "claims";
 }

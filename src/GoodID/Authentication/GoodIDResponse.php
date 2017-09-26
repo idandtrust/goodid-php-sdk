@@ -31,7 +31,6 @@ use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
 use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\Helpers\Response\Claims;
-use GoodID\Helpers\Response\ResponseValidator;
 use GoodID\Helpers\SessionDataHandler;
 use GoodID\ServiceLocator;
 
@@ -81,6 +80,7 @@ class GoodIDResponse
      * this setting.
      * - The validity and authenticity of the token will still be checked by the
      * GoodID PHP SDK.
+     * - The max_age check will not be performed.
      *
      * @link http://openid.net/specs/openid-connect-core-1_0.html#AuthResponseValidation Authentication Response Validation
      * @link http://openid.net/specs/openid-connect-core-1_0.html#CodeFlowSteps Authorization Code Flow Steps
@@ -89,7 +89,10 @@ class GoodIDResponse
      * @param string $clientId The client id of the RP
      * @param string $clientSecret The client secret of the RP
      * @param RSAPrivateKey $signingKey The signing key-pair of the RP
-     * @param RSAPrivateKey $encryptionKey The encryption key-pair of the RP. Can be the same as $signingKey
+     * @param RSAPrivateKey|array $encryptionKeyOrKeys
+     *     The encryption key-pair of the RP.
+     *     Can be the same as $signingKey.
+     *     To accept tokens encrypted by any of an array of keys, you can pass an array of RSAPrivateKey's too.
      * @param bool $matchingResponseValidation Handle with care, see above
      * @param IncomingRequest $incomingRequest
      *
@@ -100,10 +103,12 @@ class GoodIDResponse
         $clientId,
         $clientSecret,
         RSAPrivateKey $signingKey,
-        RSAPrivateKey $encryptionKey,
+        $encryptionKeyOrKeys,
         $matchingResponseValidation = true,
         IncomingRequest $incomingRequest = null
     ) {
+        $encryptionKeys = $this->checkAndUnifyEncryptionKeys($encryptionKeyOrKeys);
+
         try {
             $goodIdServerConfig = $serviceLocator->getServerConfig();
             $sessionDataHandler = $serviceLocator->getSessionDataHandler();
@@ -136,10 +141,18 @@ class GoodIDResponse
             }
 
             // Session parameters
-            $requestedClaims = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_REQUESTED_CLAIMS);
-            $usedRequestUri = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_USED_REQUEST_URI);
-            $externallyInitiated = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_EXTERNALLY_INITIATED);
+            $requestSource = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_REQUEST_SOURCE);
+            $appInitiated = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_APP_INITIATED);
             $usedRedirectUri = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI);
+
+            if (!$requestSource) {
+                throw new GoodIDException("Request source is not set in session!");
+            }
+
+            if (is_null($appInitiated)) {
+                throw new GoodIDException("App-initiated is not set in session!");
+            }
+
             if (!$usedRedirectUri) {
                 throw new GoodIDException("Redirect uri is not set in session!");
             }
@@ -151,12 +164,19 @@ class GoodIDResponse
                 $clientSecret,
                 $usedRedirectUri,
                 $authCode,
-                $externallyInitiated ? $usedRequestUri : null
+                $appInitiated ? $requestSource : null
             );
             $tokenRequest->execute();
 
-            $idTokenJws = $encryptionKey->decryptCompactJwe($tokenRequest->getIdTokenJwe());
-            $idToken = $validator->validateIdToken($idTokenJws, $clientSecret, $tokenRequest->getGoodIDServerTime());
+            $usedRequestObjectAsArray = $this->getRequestObjectAsArray($requestSource, $signingKey);
+
+            $requestedMaxAge = isset($usedRequestObjectAsArray['max_age'])
+                ? $usedRequestObjectAsArray['max_age']
+                : null;
+
+            list($goodEncryptionKey, $idTokenJws) = $this->decryptWithAny($encryptionKeys, $tokenRequest->getIdTokenJwe());
+
+            $idToken = $validator->validateIdToken($idTokenJws, $clientSecret, $tokenRequest->getGoodIDServerTime(), $requestedMaxAge, $authCode);
 
             if ($tokenRequest->hasAccessToken()) {
                 $accessToken = $tokenRequest->getAccessToken();
@@ -168,21 +188,15 @@ class GoodIDResponse
                 );
                 $userinfoRequest->execute();
 
-                $userinfoJws = $encryptionKey->decryptCompactJwe($userinfoRequest->getUserinfoJwe());
+                $userinfoJws = $goodEncryptionKey->decryptCompactJwe($userinfoRequest->getUserinfoJwe());
                 $userinfo = $validator->validateUserInfo($userinfoJws);
 
                 // Validate tokens belong together
                 $validator->validateTokensBelongTogether($idToken, $userinfo);
 
                 // Matching response validation
-                if ($matchingResponseValidation) {
-                    $this->validateMatchingResponse(
-                        $validator,
-                        $requestedClaims,
-                        $usedRequestUri,
-                        $signingKey,
-                        $userinfo
-                    );
+                if ($matchingResponseValidation && !is_null($usedRequestObjectAsArray)) {
+                    $validator->validateMatchingResponse($usedRequestObjectAsArray, $userinfo);
                 }
 
                 $this->accessToken = $accessToken;
@@ -197,6 +211,76 @@ class GoodIDResponse
         } finally {
             $sessionDataHandler->removeAll();
         }
+    }
+
+    /**
+     *
+     * @param RSAPrivateKey|array $encryptionKeyOrKeys
+     * @return array Encryption keys
+     * @throws GoodIDException
+     */
+    private function checkAndUnifyEncryptionKeys($encryptionKeyOrKeys)
+    {
+        if (is_array($encryptionKeyOrKeys)) {
+            $encryptionKeys = $encryptionKeyOrKeys;
+        } else {
+            $encryptionKeys = [$encryptionKeyOrKeys];
+        }
+
+        foreach ($encryptionKeys as $encryptionKey) {
+            if (!$encryptionKey instanceof RSAPrivateKey) {
+                throw new GoodIDException('$encryptionKeyOrKeys must be RSAPrivateKey or array of RSAPrivateKey\'s');
+            }
+        }
+
+        return $encryptionKeys;
+    }
+
+    /**
+     *
+     * @param array $encPrivKeys Encryption Private Keys
+     * @param string $jwe JWE
+     * @return string JWS
+     * @throws GoodIDException
+     */
+    private function decryptWithAny(array $encPrivKeys, $jwe)
+    {
+        $exceptionMessages = '';
+
+        foreach ($encPrivKeys as $encryptionKey) {
+            try {
+                return [
+                    $encryptionKey,
+                    $encryptionKey->decryptCompactJwe($jwe)
+                ];
+            } catch (GoodIDException $e) {
+                $exceptionMessages .= $e->getMessage() . ', ';
+            }
+        }
+
+        throw new GoodIDException('No key could decrypt: ' . $exceptionMessages);
+    }
+
+    /**
+     * Get request object as array
+     *
+     * @param array|string $requestSource Request source
+     * @param RSAPublicKey $sigPubKey Public signing key
+     * @return array|null
+     */
+    private function getRequestObjectAsArray($requestSource, RSAPublicKey $sigPubKey)
+    {
+        if (is_array($requestSource)) {
+            return $requestSource;
+        } elseif (is_string($requestSource) && $requestSource !== OpenIDRequestSource::CONTENT_IS_ENCRYPTED) {
+            $downloadedRequestSource = (new OpenIDRequestURI($requestSource))->toArray($sigPubKey);
+
+            if ($downloadedRequestSource !== OpenIDRequestSource::CONTENT_IS_ENCRYPTED) {
+                return $downloadedRequestSource;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -327,35 +411,6 @@ class GoodIDResponse
         }
 
         return $this->accessToken;
-    }
-
-    /**
-     * Validate matching response
-     *
-     * @param ResponseValidator $validator Response Validator
-     * @param array|null $requestedClaims Requested claims
-     * @param string|null $usedRequestUri Used request URI
-     * @param RSAPublicKey $signingKey RP Signing key
-     * @param array $userInfo UserInfo
-     *
-     * @throws GoodIDException
-     */
-    private function validateMatchingResponse(
-        ResponseValidator $validator,
-        $requestedClaims,
-        $usedRequestUri,
-        RSAPublicKey $signingKey,
-        $userInfo
-    ) {
-        if (!(is_null($requestedClaims) xor is_null($usedRequestUri))) {
-            throw new GoodIDException('Exactly one of REQUESTED_CLAIMS and USED_REQUEST_URI must be set');
-        }
-        if (!is_null($usedRequestUri)) {
-            $requestedClaims = (new OpenIDRequestURI($usedRequestUri))->getClaims($signingKey);
-        }
-        if ($requestedClaims !== OpenIDRequestSource::CONTENT_IS_ENCRYPTED) {
-            $validator->validateMatchingResponse($requestedClaims, $userInfo);
-        }
     }
 
     /**

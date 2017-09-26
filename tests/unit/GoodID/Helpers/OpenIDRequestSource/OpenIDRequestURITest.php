@@ -32,7 +32,7 @@ class OpenIDRequestURITest extends \PHPUnit_Framework_TestCase
                 ],
             ],
         ];
-        $tokens = $uri->download($key);
+        $tokens = $uri->toArray($key);
         $this->assertEquals($expected, $tokens);
     }
 
@@ -45,7 +45,7 @@ class OpenIDRequestURITest extends \PHPUnit_Framework_TestCase
 
         $uri = $this->createMockUri($this->jwe);
 
-        $this->assertEquals(OpenIDRequestURI::CONTENT_IS_ENCRYPTED, $uri->download($key));
+        $this->assertEquals(OpenIDRequestURI::CONTENT_IS_ENCRYPTED, $uri->toArray($key));
     }
 
     /**

@@ -92,4 +92,12 @@ class GoodIDServerConfig
     {
         return $this->getIdpUri() . '/oidc/client-log-sink';
     }
+
+    /**
+     * @return string GoodID JWKS URI
+     */
+    public function getJwksUri()
+    {
+        return $this->getIdpUri() . '/jwks.json';
+    }
 }

@@ -38,6 +38,17 @@ use GoodID\Helpers\StateNonceHandler;
 abstract class AbstractGoodIDEndpoint
 {
     /**
+     * The smallest accepted value for max_age
+     */
+    const MAX_AGE_MIN_VALUE = 3600;
+
+    /**
+     * The largest accepted value for max_age
+     * 60 days in seconds
+     */
+    const MAX_AGE_MAX_VALUE = 5184000;
+
+    /**
      * @var IncomingRequest
      */
     protected $incomingRequest;
@@ -73,6 +84,12 @@ abstract class AbstractGoodIDEndpoint
     protected $acr;
 
     /**
+     *
+     * @var int
+     */
+    protected $maxAge;
+
+    /**
      * @var GoodIDServerConfig
      */
     protected $goodIdServerConfig;
@@ -100,6 +117,7 @@ abstract class AbstractGoodIDEndpoint
      * @param GoodIDServerConfig $goodIdServerConfig
      * @param SessionDataHandler $sessionDataHandler
      * @param StateNonceHandler $stateNonceHandler
+     * @param int|null $maxAge
      */
     public function __construct(
         IncomingRequest $incomingRequest,
@@ -111,10 +129,18 @@ abstract class AbstractGoodIDEndpoint
         $acr,
         GoodIDServerConfig $goodIdServerConfig,
         SessionDataHandler $sessionDataHandler,
-        StateNonceHandler $stateNonceHandler
+        StateNonceHandler $stateNonceHandler,
+        $maxAge
     ) {
         if (empty($clientId)) {
             throw new GoodIDException('$clientId can not be empty');
+        }
+
+        if (!is_null($maxAge) &&
+            (!is_int($maxAge) || $maxAge < self::MAX_AGE_MIN_VALUE || $maxAge > self::MAX_AGE_MAX_VALUE)
+        ) {
+            throw new GoodIDException('$maxAge must be null or an int in the range ['
+                . self::MAX_AGE_MIN_VALUE .  ', ' . self::MAX_AGE_MAX_VALUE . ']');
         }
 
         $this->incomingRequest = $incomingRequest;
@@ -124,6 +150,7 @@ abstract class AbstractGoodIDEndpoint
         $this->requestSource = $requestSource;
         $this->redirectUri = $redirectUri;
         $this->acr = $acr;
+        $this->maxAge = $maxAge;
         $this->goodIdServerConfig = $goodIdServerConfig;
         $this->sessionDataHandler = $sessionDataHandler;
         $this->stateNonceHandler = $stateNonceHandler;

@@ -74,6 +74,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
      *    If $this->claims already has acr, then the requested acr value will be
      *    the maximum of $claims['id_token']['acr']['value'] and $acr.
+     * @param int|null $maxAge Maximum authentication age
      *
      * @return string JWT
      *
@@ -84,7 +85,39 @@ class OpenIDRequestObject implements OpenIDRequestSource
         $clientId,
         $redirectUri,
         GoodIDServerConfig $goodIdServerConfig,
-        $acr = Acr::LEVEL_DEFAULT
+        $acr = Acr::LEVEL_DEFAULT,
+        $maxAge = null
+    ) {
+        $array = $this->toArray(
+            $clientId,
+            $redirectUri,
+            $goodIdServerConfig,
+            $acr,
+            $maxAge
+        );
+
+        return $this->generateFromArray($array, $sigKey);
+    }
+
+    /**
+     * To array
+     *
+     * @param string $clientId RP client id
+     * @param string $redirectUri Redirect URI
+     * @param GoodIDServerConfig $goodIdServerConfig Configurations
+     * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
+     *    If $this->claims already has acr, then the requested acr value will be
+     *    the maximum of $claims['id_token']['acr']['value'] and $acr.
+     * @param int|null $maxAge Maximum authentication age
+     * @return array
+     * @throws GoodIDException
+     */
+    public function toArray(
+        $clientId,
+        $redirectUri,
+        GoodIDServerConfig $goodIdServerConfig,
+        $acr = Acr::LEVEL_DEFAULT,
+        $maxAge = null
     ) {
         if (!Acr::isValid($acr)) {
             throw new GoodIDException("Invalid ACR: " . $acr);
@@ -102,9 +135,23 @@ class OpenIDRequestObject implements OpenIDRequestSource
             'claims' => $this->emptyArrayToObjectRecursive($this->claims)
         ];
 
-        $jwt = $sigKey->signAsCompactJws($array);
+        if (!is_null($maxAge)) {
+            $array['max_age'] = $maxAge;
+        }
 
-        return $jwt;
+        return $array;
+    }
+
+    /**
+     * Generate from array
+     *
+     * @param array $array Request Object as array
+     * @param RSAPrivateKey $sigPrivKey Private signature key
+     * @return string Request Object as JWT string
+     */
+    public function generateFromArray(array $array, RSAPrivateKey $sigPrivKey)
+    {
+        return $sigPrivKey->signAsCompactJws($array);
     }
 
     /**

@@ -24,6 +24,7 @@
 
 namespace GoodID\Helpers\Response;
 
+use Base64Url\Base64Url;
 use GoodID\Exception\ValidationException;
 use GoodID\Helpers\Claim;
 use GoodID\Helpers\GoodIDServerConfig;
@@ -58,6 +59,11 @@ class ResponseValidator
      * Claim name: State
      */
     const CLAIM_NAME_STATE = "state";
+
+    /**
+     * Claim name: Authorization code hash
+     */
+    const CLAIM_NAME_C_HASH = "c_hash";
 
     /**
      * The maximum lifetime of a token in seconds
@@ -124,15 +130,14 @@ class ResponseValidator
      */
     public function validateUserInfo($jwsUserInfo)
     {
-        $claims = $this->validate($jwsUserInfo);
+        $userInfo = $this->validate($jwsUserInfo);
 
-        if (isset($claims[Claim::NAME_CLAIMS][self::CLAIM_NAME_EMAIL_VERIFIED])
-            && isset($claims[Claim::NAME_CLAIMS][self::CLAIM_NAME_GOODID_EMAIL_CERT])
-        ) {
-            unset($claims[Claim::NAME_CLAIMS][self::CLAIM_NAME_GOODID_EMAIL_CERT]);
-        }
+        $emailCertValidator = new EmailCertificateValidator($this->goodIDServerConfig);
+        $emailCertValidator->validateUserInfo($userInfo);
 
-        return $claims;
+        unset($userInfo[Claim::NAME_CLAIMS][self::CLAIM_NAME_GOODID_EMAIL_CERT]);
+
+        return $userInfo;
     }
 
     /**
@@ -155,12 +160,14 @@ class ResponseValidator
      * @param string $jwsIdToken Id Token as a compact JWS
      * @param string $clientSecret RP client secret
      * @param int $goodIDServerTime GoodID Server time as a Unix timestamp
+     * @param int|null $requestedMaxAge Requested max age
+     * @param string $authCode Authorization code
      *
      * @return array Id Token as an array
      *
      * @throws ValidationException on error
      */
-    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime)
+    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime, $requestedMaxAge, $authCode)
     {
         $claims = $this->validate($jwsIdToken);
 
@@ -180,6 +187,17 @@ class ResponseValidator
             throw new ValidationException("Invalid issuance time.");
         }
 
+        if (!is_null($requestedMaxAge)
+            && (
+                !isset($claims[Claim::NAME_AUTH_TIME])
+                || !is_int($claims[Claim::NAME_AUTH_TIME])
+                || $goodIDServerTime - $claims[Claim::NAME_AUTH_TIME] > $requestedMaxAge
+                || $claims[Claim::NAME_AUTH_TIME] > $goodIDServerTime
+            )
+        ) {
+            throw new ValidationException("Invalid authentication time.");
+        }
+
         $isNonceValid = isset($claims[self::CLAIM_NAME_NONCE])
             && $this->stateNonceHandler->validateNonce(
                 $claims[self::CLAIM_NAME_NONCE],
@@ -192,12 +210,35 @@ class ResponseValidator
             throw new ValidationException("The received nonce is invalid.");
         }
 
+        if ($this->stateNonceHandler->getNonceValidationMode($claims[self::CLAIM_NAME_NONCE])
+            !== StateNonceHandler::NONCE_VALIDATION_MODE_CONVENIENT_TOTP
+        ) {
+            $authCodeHash = $this->calculateAuthorizationCodeHash($authCode);
+
+            if (!isset($claims[self::CLAIM_NAME_C_HASH])
+                || $claims[self::CLAIM_NAME_C_HASH] !== $authCodeHash
+            ) {
+                throw new ValidationException("The authorization code hash is invalid.");
+            }
+        }
+
         // Remove `claims` because personal data can be only requested in userinfo
         if (isset($claims[Claim::NAME_CLAIMS])) {
             unset($claims[Claim::NAME_CLAIMS]);
         }
 
         return $claims;
+    }
+
+    /**
+     * Calculate authorization code hash
+     *
+     * @param string $authCode Authorization code
+     * @return string Authorization code hash
+     */
+    private function calculateAuthorizationCodeHash($authCode)
+    {
+        return Base64Url::encode(substr(hash('sha256', $authCode, true), 0, 16));
     }
 
     /**

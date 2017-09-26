@@ -68,7 +68,7 @@ class OpenIDRequestURI implements OpenIDRequestSource
      *
      * @return array|string Request object as an array, or self::CONTENT_IS_ENCRYPTED
      */
-    public function download(RSAPublicKey $sigPubKey)
+    public function toArray(RSAPublicKey $sigPubKey)
     {
         $jwt = $this->retrieveUriContents($this->requestUri);
 
@@ -88,7 +88,7 @@ class OpenIDRequestURI implements OpenIDRequestSource
      */
     public function getClaims(RSAPublicKey $sigPubKey)
     {
-        $res = $this->download($sigPubKey);
+        $res = $this->toArray($sigPubKey);
         if ($res === self::CONTENT_IS_ENCRYPTED) {
             return $res;
         }

@@ -46,32 +46,24 @@ class SessionDataHandler
     const SESSION_KEY_STATE = 'state';
 
     /**
-     * The session key for the requested claims
-     * If the requested claims can not be determined because they are encrypted
-     * then OpenIDRequestSource::CONTENT_IS_ENCRYPTED value is stored
-     *
-     * Value type: array|string
-     */
-    const SESSION_KEY_REQUESTED_CLAIMS = "claims";
-
-    /**
-     * The session key for the used request_uri
-     * Value type: string
-     */
-    const SESSION_KEY_USED_REQUEST_URI = "requesturi";
-
-    /**
      * The session key for the used redirect_uri
      * Value type: string
      */
     const SESSION_KEY_USED_REDIRECT_URI = "redirecturi";
 
     /**
+     * The session key for:
+     *     Request object as array, or request uri as string, or OpenIDRequestSource::CONTENT_IS_ENCRYPTED
+     * Value type: string|array
+     */
+    const SESSION_KEY_REQUEST_SOURCE = "reqsource";
+
+    /**
      * Session key: Is the request initiated outside the RP backend.
      * Eg.: provider screen
      * Value type: bool
      */
-    const SESSION_KEY_EXTERNALLY_INITIATED = "extinit";
+    const SESSION_KEY_APP_INITIATED = "appinit";
 
     /**
      * @var string
