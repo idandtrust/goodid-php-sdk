@@ -57,8 +57,8 @@ session_start();
 $serviceLocator = new ServiceLocator();
 
 // -- Option 2 --
-// Or you can define your own session data handler
-// by define a class which implements \GoodID\Helpers\SessionDataHandlerInterface
+// Or you can add your own session data handler
+// by defining a class which implements \GoodID\Helpers\SessionDataHandlerInterface
 // Add that to the $serviceLocator.
 $serviceLocator->setSessionDataHandler(new CustomSessionDataHandler());
 
@@ -101,8 +101,8 @@ session_start();
 $serviceLocator = new ServiceLocator();
 
 // -- Option 2 --
-// Or you can define your own session data handler
-// by define a class which implements \GoodID\Helpers\SessionDataHandlerInterface
+// Or you can add your own session data handler
+// by defining a class which implements \GoodID\Helpers\SessionDataHandlerInterface
 // Add that to the $serviceLocator.
 $serviceLocator->setSessionDataHandler(new CustomSessionDataHandler());
 
