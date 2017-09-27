@@ -29,7 +29,7 @@ use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 
 /**
@@ -95,7 +95,7 @@ abstract class AbstractGoodIDEndpoint
     protected $goodIdServerConfig;
 
     /**
-     * @var SessionDataHandler
+     * @var SessionDataHandlerInterface
      */
     protected $sessionDataHandler;
 
@@ -115,7 +115,7 @@ abstract class AbstractGoodIDEndpoint
      * @param string $redirectUri
      * @param int $acr
      * @param GoodIDServerConfig $goodIdServerConfig
-     * @param SessionDataHandler $sessionDataHandler
+     * @param SessionDataHandlerInterface $sessionDataHandler
      * @param StateNonceHandler $stateNonceHandler
      * @param int|null $maxAge
      */
@@ -128,7 +128,7 @@ abstract class AbstractGoodIDEndpoint
         $redirectUri,
         $acr,
         GoodIDServerConfig $goodIdServerConfig,
-        SessionDataHandler $sessionDataHandler,
+        SessionDataHandlerInterface $sessionDataHandler,
         StateNonceHandler $stateNonceHandler,
         $maxAge
     ) {

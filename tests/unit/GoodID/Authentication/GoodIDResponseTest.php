@@ -11,7 +11,7 @@ use GoodID\Helpers\Request\RequestFactory;
 use GoodID\Helpers\Request\TokenRequest;
 use GoodID\Helpers\Request\UserinfoRequest;
 use GoodID\Helpers\Response\ResponseValidator;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\ServiceLocator;
 use GoodID\Testing\MockIncomingRequest;
 
@@ -137,13 +137,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itFailsIfAppInitiatedIsNotSet()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, null],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, ''],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, null],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, ''],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
 
         $goodIdResponse = $this->createGoodIDResponse([
@@ -160,13 +160,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itFailsIfRedirectUriIsNotSet()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, ''],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, ''],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
 
         $goodIdResponse = $this->createGoodIDResponse([
@@ -183,13 +183,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itFailsIfRequestSourceIsNotSet()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ''],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ''],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -222,13 +222,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itCallsTokenEndpoint()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $validator = $this->createMock(ResponseValidator::class);
@@ -255,13 +255,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itExtractsDataFromIdTokenExceptForClaims()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $requestFactory = $this->createMock(RequestFactory::class);
@@ -297,13 +297,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itCombinesClaimsFromUserinfoWithIdToken()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -360,13 +360,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itWorksWithMultipleEncryptionKeys()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -438,13 +438,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itFailsIfNoEncryptionKeyWorks()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -508,13 +508,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     public function itFailsIfSubIsNotSet()
     {
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $validator = $this->createMock(ResponseValidator::class);
         $validator->method('validateIdToken')
@@ -550,13 +550,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
         $userInfo = ['foo' => 'bar'];
 
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, $requestObjectAsArray],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, $requestObjectAsArray],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -576,7 +576,7 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
 
         $validator->expects($this->once())
             ->method('validateMatchingResponse')
-            ->with($this->equalTo($requestObjectAsArray), $this->equalTo($userInfo));
+            ->with($this->equalTo($requestObjectAsArray['claims']), $this->equalTo($userInfo));
 
         $goodIdResponse = $this->createGoodIDResponse([
             'incomingRequest' => $request,
@@ -596,13 +596,21 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
         $userInfo = ['foo' => 'bar'];
 
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, [
+                        'iss' => 'client1',
+                        "claims" => [
+                            "userinfo" => [
+                                'bar' => 'baz'
+                            ]
+                        ]
+                    ]
+                ],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -645,13 +653,13 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
         $userInfo = ['foo' => 'bar'];
 
         $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->atLeastOnce())
             ->method('get')
             ->willReturnMap([
-                [SessionDataHandler::SESSION_KEY_APP_INITIATED, false],
-                [SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandler::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
+                [SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED, false],
+                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
+                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
             ]);
         $tokenRequest = $this->createMock(TokenRequest::class);
         $userinfoRequest = $this->createMock(UserinfoRequest::class);
@@ -694,7 +702,7 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
         $serviceLocator->method('getServerConfig')
             ->willReturn(isset($params['goodIdServerConfig']) ? $params['goodIdServerConfig'] : $this->createMock(GoodIDServerConfig::class));
         $serviceLocator->method('getSessionDataHandler')
-            ->willReturn(isset($params['sessionDataHandler']) ? $params['sessionDataHandler'] : $this->createMock(SessionDataHandler::class));
+            ->willReturn(isset($params['sessionDataHandler']) ? $params['sessionDataHandler'] : $this->createMock(SessionDataHandlerInterface::class));
         $serviceLocator->method('getResponseValidator')
             ->willReturn(isset($params['responseValidator']) ? $params['responseValidator'] : $this->createMock(ResponseValidator::class));
         $serviceLocator->method('getRequestFactory')

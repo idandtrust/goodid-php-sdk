@@ -9,7 +9,7 @@ use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\ServiceLocator;
 
@@ -48,7 +48,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $serviceLocator->method('getServerConfig')
             ->willReturn($this->createMock(GoodIDServerConfig::class));
         $serviceLocator->method('getSessionDataHandler')
-            ->willReturn($this->createMock(SessionDataHandler::class));
+            ->willReturn($this->createMock(SessionDataHandlerInterface::class));
         $serviceLocator->method('getStateNonceHandler')
             ->willReturn($this->createMock(StateNonceHandler::class));
         $mockKey = $this->createMock(RSAPrivateKey::class);
@@ -82,7 +82,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $serviceLocator->method('getServerConfig')
             ->willReturn($this->createMock(GoodIDServerConfig::class));
         $serviceLocator->method('getSessionDataHandler')
-            ->willReturn($this->createMock(SessionDataHandler::class));
+            ->willReturn($this->createMock(SessionDataHandlerInterface::class));
         $serviceLocator->method('getStateNonceHandler')
             ->willReturn($this->createMock(StateNonceHandler::class));
         $mockKey = $this->createMock(RSAPrivateKey::class);
@@ -116,7 +116,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $serviceLocator->method('getServerConfig')
             ->willReturn($this->createMock(GoodIDServerConfig::class));
         $serviceLocator->method('getSessionDataHandler')
-            ->willReturn($this->createMock(SessionDataHandler::class));
+            ->willReturn($this->createMock(SessionDataHandlerInterface::class));
         $serviceLocator->method('getStateNonceHandler')
             ->willReturn($this->createMock(StateNonceHandler::class));
         $mockKey = $this->createMock(RSAPrivateKey::class);

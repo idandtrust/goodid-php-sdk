@@ -28,6 +28,7 @@ use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Request\RequestFactory;
 use GoodID\Helpers\Response\ResponseValidator;
 use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\Helpers\TotpValidator;
 
@@ -45,7 +46,7 @@ class ServiceLocator
     private $serverConfig;
 
     /**
-     * @var SessionDataHandler
+     * @var SessionDataHandlerInterface
      */
     private $sessionDataHandler;
 
@@ -107,6 +108,14 @@ class ServiceLocator
         }
 
         return $this->sessionDataHandler;
+    }
+
+    /**
+     * @param SessionDataHandlerInterface $sessionDataHandler
+     */
+    public function setSessionDataHandler(SessionDataHandlerInterface $sessionDataHandler)
+    {
+        $this->sessionDataHandler = $sessionDataHandler;
     }
 
     /**

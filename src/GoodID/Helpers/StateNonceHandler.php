@@ -61,7 +61,7 @@ class StateNonceHandler
     const NONCE_VALIDATION_MODE_NORMAL = 'D';
 
     /**
-     * @var SessionDataHandler
+     * @var SessionDataHandlerInterface
      */
     private $sessionDataHandler;
 
@@ -73,9 +73,9 @@ class StateNonceHandler
     /**
      * Construct
      *
-     * @param SessionDataHandler $sessionDataHandler
+     * @param SessionDataHandlerInterface $sessionDataHandler
      */
-    public function __construct(SessionDataHandler $sessionDataHandler, TotpValidator $totpValidator)
+    public function __construct(SessionDataHandlerInterface $sessionDataHandler, TotpValidator $totpValidator)
     {
         $this->sessionDataHandler = $sessionDataHandler;
         $this->totpValidator = $totpValidator;
@@ -89,7 +89,7 @@ class StateNonceHandler
     public function generateState()
     {
         $random = RandomStringGenerator::getPseudoRandomString(self::NORMAL_NONCE_LENGTH);
-        $this->sessionDataHandler->set(SessionDataHandler::SESSION_KEY_STATE, $random);
+        $this->sessionDataHandler->set(SessionDataHandlerInterface::SESSION_KEY_STATE, $random);
 
         return $random;
     }
@@ -105,8 +105,8 @@ class StateNonceHandler
      */
     public function validateState($receivedState)
     {
-        $storedState = $this->sessionDataHandler->get(SessionDataHandler::SESSION_KEY_STATE);
-        $this->sessionDataHandler->remove(SessionDataHandler::SESSION_KEY_STATE);
+        $storedState = $this->sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_STATE);
+        $this->sessionDataHandler->remove(SessionDataHandlerInterface::SESSION_KEY_STATE);
 
         if (!$storedState || $receivedState !== $storedState) {
             return false;
@@ -123,7 +123,7 @@ class StateNonceHandler
     public function generateNonce()
     {
         $random = RandomStringGenerator::getPseudoRandomString(self::NORMAL_NONCE_LENGTH);
-        $this->sessionDataHandler->set(SessionDataHandler::SESSION_KEY_NONCE, $random);
+        $this->sessionDataHandler->set(SessionDataHandlerInterface::SESSION_KEY_NONCE, $random);
 
         return $random;
     }
@@ -142,8 +142,8 @@ class StateNonceHandler
      */
     public function validateNonce($receivedNonce, $clientSecret, $currentGoodIDTime, $issuedAtTime)
     {
-        $storedNonce = $this->sessionDataHandler->get(SessionDataHandler::SESSION_KEY_NONCE);
-        $this->sessionDataHandler->remove(SessionDataHandler::SESSION_KEY_NONCE);
+        $storedNonce = $this->sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_NONCE);
+        $this->sessionDataHandler->remove(SessionDataHandlerInterface::SESSION_KEY_NONCE);
 
         if (strlen($receivedNonce) === self::NORMAL_NONCE_LENGTH) {
             return $storedNonce && $receivedNonce === $storedNonce;

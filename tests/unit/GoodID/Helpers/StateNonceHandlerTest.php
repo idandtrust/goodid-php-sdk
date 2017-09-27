@@ -9,10 +9,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itStoresStateInSessionHandler()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('set')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE), $this->anything());
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE), $this->anything());
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
         $handler->generateState();
@@ -23,10 +23,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itStoresNonceInSessionHandler()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('set')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE), $this->anything());
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE), $this->anything());
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
         $handler->generateNonce();
@@ -37,10 +37,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsStateValidationWhenStateIsNotSet()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE))
             ->willReturn(null);
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
@@ -52,10 +52,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsStateValidationWhenSetStateDiffers()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE))
             ->willReturn('a234567890123456789012');
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
@@ -67,10 +67,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itPassesStateValidationIfStoredAndReceivedStatesAreEqual()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE))
             ->willReturn('1234567890123456789012');
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
@@ -82,14 +82,14 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itClearsSetStateAfterPassingValidation()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE))
             ->willReturn('1234567890123456789012');
 
         $sessionDataHandler->expects($this->once())
             ->method('remove')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE));
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE));
 
         (new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse()))
             ->validateState('1234567890123456789012');
@@ -100,14 +100,14 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itClearsSetStateAfterFailingValidation()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE))
             ->willReturn('a234567890123456789012');
 
         $sessionDataHandler->expects($this->once())
             ->method('remove')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_STATE));
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_STATE));
 
         (new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse()))
             ->validateState('b234567890123456789012');
@@ -118,10 +118,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsNonceValidationWhenNonceIsNotSet()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn(null);
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
@@ -133,10 +133,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsNonceValidationWhenSetNonceDiffers()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('a234567890123456789012');
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
@@ -148,10 +148,10 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itPassesNonceValidationIfStoredAndReceivedNoncesAreEqual()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->expects($this->once())
             ->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('1234567890123456789012');
 
         $handler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());
@@ -163,9 +163,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itPassesNonceValidationIfValidTotpNonceIsUsedInNormalMode1()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('anything');
 
 
@@ -184,9 +184,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itPassesNonceValidationIfValidTotpNonceIsUsedInConvenientMode1()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('anything');
 
         $handler = new StateNonceHandler($sessionDataHandler, new TotpValidator());
@@ -204,9 +204,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itPassesNonceValidationIfValidTotpNonceIsUsedInConvenientMode2()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('anything');
 
         $handler = new StateNonceHandler($sessionDataHandler, new TotpValidator());
@@ -224,9 +224,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itPassesNonceValidationIfValidTotpNonceIsUsedInNormalMode2()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('anything');
 
         $handler = new StateNonceHandler($sessionDataHandler, new TotpValidator());
@@ -245,9 +245,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsNonceValidationIfInvalidTotpNonceIsUsedInNormalMode()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('anything');
 
         $handler = new StateNonceHandler($sessionDataHandler, new TotpValidator());
@@ -265,9 +265,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsNonceValidationIfInvalidTotpNonceIsUsedInConvenientMode()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('anything');
 
         $handler = new StateNonceHandler($sessionDataHandler, new TotpValidator());
@@ -286,14 +286,14 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itClearsSetNonceAfterPassingValidation()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('1234567890123456789012');
 
         $sessionDataHandler->expects($this->once())
             ->method('remove')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE));
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE));
 
         (new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse()))
             ->validateNonce('1234567890123456789012', 'dummy-client-secret', 0, 0);
@@ -304,14 +304,14 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itClearsSetNonceAfterFailingValidation()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn('a234567890123456789012');
 
         $sessionDataHandler->expects($this->once())
             ->method('remove')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE));
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE));
 
         (new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse()))
             ->validateNonce('b234567890123456789012', 'dummy-client-secret', 0, 0);
@@ -325,9 +325,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itThrowsOnBadNonceLength()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn(null);
 
         (new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse()))
@@ -342,9 +342,9 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
      */
     public function itThrowsOnBadTotpNonceValidationMode()
     {
-        $sessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $sessionDataHandler->method('get')
-            ->with($this->equalTo(SessionDataHandler::SESSION_KEY_NONCE))
+            ->with($this->equalTo(SessionDataHandlerInterface::SESSION_KEY_NONCE))
             ->willReturn(null);
 
         $stateNonceHandler = new StateNonceHandler($sessionDataHandler, $this->createTotpValidatorReturningFalse());

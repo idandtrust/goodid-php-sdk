@@ -30,7 +30,7 @@ use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObjectJWT;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 
 /**
  * This class is responsible to build the Authentication Request
@@ -80,18 +80,18 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
         ];
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_APP_INITIATED,
+            SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED,
             false);
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI,
+            SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI,
             $this->redirectUri);
 
         if ($this->requestSource instanceof OpenIDRequestURI) {
             $queryParams['request_uri'] = $this->requestSource->getRequestUri();
 
             $this->sessionDataHandler->set(
-                SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
+                SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE,
                 $this->requestSource->getRequestUri());
         } elseif ($this->requestSource instanceof OpenIDRequestObject) {
             $requestObjectAsArray = $this->requestSource->toArray(
@@ -106,13 +106,13 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
                     $requestObjectAsArray, $this->signingKey);
 
             $this->sessionDataHandler->set(
-                SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
+                SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE,
                 $requestObjectAsArray);
         } elseif ($this->requestSource instanceof OpenIDRequestObjectJWT) {
             $queryParams['request'] = $this->requestSource->getJwt();
 
             $this->sessionDataHandler->set(
-                SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
+                SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE,
                 $this->requestSource->toArray($this->signingKey));
         } else {
             throw new GoodIDException("Unsupported OpenIDRequestSource");

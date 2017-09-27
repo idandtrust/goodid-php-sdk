@@ -326,10 +326,9 @@ class ResponseValidator
             $baseClaimName = substr($claimName, 0, strlen($claimName) - strlen('_verified'));
             $baseClaimValueInRequest = isset($request[$baseClaimName]) ? $request[$baseClaimName] : [];
             $isBaseClaimEnabled = $this->getBoolValue($baseClaimValueInRequest, 'conditional', true, $logicEvaluator);
-            $baseClaimValueInResponse = $this->getClaimValue($response, $claimName);
+            $baseClaimValueInResponse = $this->getClaimValue($response, $baseClaimName);
             $isBaseClaimSet = !is_null($baseClaimValueInResponse);
             $isBaseClaimEssential = $this->getBoolValue($baseClaimValueInRequest, 'essential', false, $logicEvaluator);
-
             if (!$isBaseClaimEnabled && $isBaseClaimSet) {
                 throw new ValidationException("Verifiable claim $baseClaimName disabled by conditional, but set.");
             }

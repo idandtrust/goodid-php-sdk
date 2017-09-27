@@ -25,7 +25,7 @@
 namespace GoodID\Authentication\Endpoint;
 
 use GoodID\Exception\GoodIDException;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 
 /**
  * This class is responsible for generating a state for the GoodID app-initiated login flow
@@ -60,15 +60,15 @@ class GoodIDLoginInitiationEndpoint extends AbstractGoodIDEndpoint
         }
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_APP_INITIATED,
+            SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED,
             true);
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_REQUEST_SOURCE,
+            SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE,
             $requestUri);
 
         $this->sessionDataHandler->set(
-            SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI,
+            SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI,
             $redirectUri);
 
         $state = $this->stateNonceHandler->generateState();

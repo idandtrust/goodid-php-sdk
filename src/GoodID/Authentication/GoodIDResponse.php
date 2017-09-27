@@ -25,13 +25,14 @@
 namespace GoodID\Authentication;
 
 use GoodID\Exception\GoodIDException;
+use GoodID\Exception\ValidationException;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\Key\RSAPublicKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
 use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\Helpers\Response\Claims;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\ServiceLocator;
 
 /**
@@ -141,9 +142,9 @@ class GoodIDResponse
             }
 
             // Session parameters
-            $requestSource = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_REQUEST_SOURCE);
-            $appInitiated = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_APP_INITIATED);
-            $usedRedirectUri = $sessionDataHandler->get(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI);
+            $requestSource = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE);
+            $appInitiated = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED);
+            $usedRedirectUri = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI);
 
             if (!$requestSource) {
                 throw new GoodIDException("Request source is not set in session!");
@@ -195,8 +196,15 @@ class GoodIDResponse
                 $validator->validateTokensBelongTogether($idToken, $userinfo);
 
                 // Matching response validation
-                if ($matchingResponseValidation && !is_null($usedRequestObjectAsArray)) {
-                    $validator->validateMatchingResponse($usedRequestObjectAsArray, $userinfo);
+                if ($matchingResponseValidation) {
+                    if (!is_null($usedRequestObjectAsArray)
+                        && isset($usedRequestObjectAsArray["claims"])
+                        && is_array($usedRequestObjectAsArray["claims"])
+                    ) {
+                        $validator->validateMatchingResponse($usedRequestObjectAsArray["claims"], $userinfo);
+                    } else {
+                        throw new ValidationException("Matching response validation cannot succeed because the request object was probably encrypted, or nothing was requested.");
+                    }
                 }
 
                 $this->accessToken = $accessToken;

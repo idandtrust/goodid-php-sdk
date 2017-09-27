@@ -10,7 +10,7 @@ use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObjectJWT;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
 use GoodID\Helpers\Request\IncomingRequest;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\Testing\MockIncomingRequest;
 
@@ -263,11 +263,11 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_APP_INITIATED),
+                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED),
                     $this->equalTo(false)
                 ],
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI),
+                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
                 ]
             );
@@ -300,11 +300,11 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_APP_INITIATED),
+                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED),
                     $this->equalTo(false)
                 ],
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI),
+                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
                 ]
             );
@@ -335,11 +335,11 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_APP_INITIATED),
+                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED),
                     $this->equalTo(false)
                 ],
                 [
-                    $this->equalTo(SessionDataHandler::SESSION_KEY_USED_REDIRECT_URI),
+                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
                 ]
             );
@@ -352,7 +352,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $signingKey = $this->createMock(RSAPrivateKey::class);
         $encryptionKey = $this->createMock(RSAPrivateKey::class);
         $requestSource = $requestSource ?: $this->createMock(OpenIDRequestSource::class);
-        $this->mockSessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $this->mockSessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $mockStateNonceHandler = $this->createMock(StateNonceHandler::class);
         $mockStateNonceHandler->method('generateNonce')->willReturn('mock-nonce-value');
         $mockStateNonceHandler->method('generateState')->willReturn('mock-state-value');
@@ -375,7 +375,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @var SessionDataHandler|\PHPUnit_Framework_MockObject_MockObject
+     * @var SessionDataHandlerInterface|\PHPUnit_Framework_MockObject_MockObject
      */
     private $mockSessionDataHandler;
 }

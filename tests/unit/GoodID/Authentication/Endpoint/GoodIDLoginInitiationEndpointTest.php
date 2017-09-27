@@ -7,7 +7,7 @@ use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
-use GoodID\Helpers\SessionDataHandler;
+use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\Testing\MockIncomingRequest;
 
@@ -82,7 +82,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
     {
         $mockKey = $this->createMock(RSAPrivateKey::class);
         $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
-        $mockSessionDataHandler = $this->createMock(SessionDataHandler::class);
+        $mockSessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $mockStateNonceHandler = $this->createMock(StateNonceHandler::class);
         $mockStateNonceHandler->method('generateNonce')->willReturn('mock-nonce-value');
         $mockStateNonceHandler->method('generateState')->willReturn('mock-state-value');

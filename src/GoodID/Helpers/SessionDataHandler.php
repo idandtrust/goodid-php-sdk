@@ -30,41 +30,8 @@ use GoodID\Exception\GoodIDException;
  * Class SessionDataHandler
  * This class handles the storage and retrieval of data to and from session.
  */
-class SessionDataHandler
+class SessionDataHandler implements SessionDataHandlerInterface
 {
-    /**
-     *
-     * The session key for nonce
-     * Value type: string
-     */
-    const SESSION_KEY_NONCE = 'nonce';
-
-    /**
-     * The session key for state
-     * Value type: string
-     */
-    const SESSION_KEY_STATE = 'state';
-
-    /**
-     * The session key for the used redirect_uri
-     * Value type: string
-     */
-    const SESSION_KEY_USED_REDIRECT_URI = "redirecturi";
-
-    /**
-     * The session key for:
-     *     Request object as array, or request uri as string, or OpenIDRequestSource::CONTENT_IS_ENCRYPTED
-     * Value type: string|array
-     */
-    const SESSION_KEY_REQUEST_SOURCE = "reqsource";
-
-    /**
-     * Session key: Is the request initiated outside the RP backend.
-     * Eg.: provider screen
-     * Value type: bool
-     */
-    const SESSION_KEY_APP_INITIATED = "appinit";
-
     /**
      * @var string
      */
@@ -94,12 +61,6 @@ class SessionDataHandler
     public function get($key)
     {
         if (isset($_SESSION[$this->goodidSessionKey])) {
-            if (!is_array($_SESSION[$this->goodidSessionKey])) {
-                unset($_SESSION[$this->goodidSessionKey]);
-                throw new GoodIDException("GoodIDSessionKey: "
-                    . $this->goodidSessionKey
-                    . " might be used by someone other than the GoodID PHP SDK.");
-            }
             if (isset($_SESSION[$this->goodidSessionKey][$key])) {
                 return $_SESSION[$this->goodidSessionKey][$key];
             }
@@ -118,11 +79,6 @@ class SessionDataHandler
     {
         if (!isset($_SESSION[$this->goodidSessionKey])) {
             $_SESSION[$this->goodidSessionKey] = [];
-        } elseif (!is_array($_SESSION[$this->goodidSessionKey])) {
-            unset($_SESSION[$this->goodidSessionKey]);
-            throw new GoodIDException("GoodIDSessionKey: "
-                . $this->goodidSessionKey
-                . " might be used by someone other than the GoodID PHP SDK.");
         }
 
         $_SESSION[$this->goodidSessionKey][$key] = $value;
