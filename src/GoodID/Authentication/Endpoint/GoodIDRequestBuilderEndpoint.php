@@ -26,11 +26,11 @@ namespace GoodID\Authentication\Endpoint;
 
 use GoodID\Exception\GoodIDException;
 use GoodID\Helpers\Config;
-use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObjectJWT;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
 use GoodID\Helpers\SessionDataHandlerInterface;
+use GoodID\Helpers\UrlSafeBase64Encoder;
 
 /**
  * This class is responsible to build the Authentication Request
@@ -65,6 +65,21 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
             throw new GoodIDException('Request parameter display missing or empty.');
         }
 
+        $ext = $this->incomingRequest->getStringParameter('ext');
+
+        if ($ext) {
+            try {
+                $ext = json_decode(UrlSafeBase64Encoder::decode($ext), true);
+            } catch (\Exception $e) {
+                throw new GoodIDException('Request parameter config is invalid.');
+            }
+        } else {
+            $ext = array();
+        }
+
+        $ext['sdk_version'] = Config::GOODID_PHP_SDK_VERSION;
+        $ext['profile_version'] = Config::GOODID_PROFILE_VERSION;
+
         // Empty value is allowed for ui_locales
         $uiLocales = $this->incomingRequest->getStringParameter('ui_locales');
 
@@ -76,7 +91,7 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
             'nonce' => $this->stateNonceHandler->generateNonce(),
             'display' => $display,
             'ui_locales' => $uiLocales,
-            'sdk_version' => Config::GOODID_PHP_SDK_VERSION,
+            'ext' => UrlSafeBase64Encoder::encode(json_encode($ext))
         ];
 
         $this->sessionDataHandler->set(
@@ -98,7 +113,7 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
                 $this->clientId,
                 $this->redirectUri,
                 $this->goodIdServerConfig,
-                $this->acr,
+                $this->secLevel,
                 $this->maxAge
             );
 
@@ -132,12 +147,6 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
 
         if ($this->incomingRequest->getMethod() === 'GET') {
             header('Location: ' . $requestUrl);
-        } elseif ($this->incomingRequest->getMethod() === 'POST') {
-            header('Content-Type: application/json');
-
-            echo json_encode([
-                "authUrl" => $requestUrl
-            ]);
         } else {
             throw new GoodIDException('Unsupported http request method: ' . $this->incomingRequest->getMethod());
         }

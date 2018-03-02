@@ -4,7 +4,7 @@ namespace GoodID\Authentication;
 
 use GoodID\Authentication\Endpoint\GoodIDLoginInitiationEndpoint;
 use GoodID\Authentication\Endpoint\GoodIDRequestBuilderEndpoint;
-use GoodID\Helpers\Acr;
+use GoodID\Helpers\SecLevel;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
@@ -18,12 +18,12 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Invalid ACR
+     * @expectedExceptionMessage Invalid security level
      */
-    public function itFailsWhenAcrIsInvalid()
+    public function itFailsWhenSecLevelIsInvalid()
     {
         $serviceLocator = $this->createMock(ServiceLocator::class);
-        $invalidACR = 12;
+        $invalidSecLevel = 12;
         $mockKey = $this->createMock(RSAPrivateKey::class);
         $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
 
@@ -34,7 +34,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            $invalidACR,
+            $invalidSecLevel,
             null
         );
     }
@@ -67,7 +67,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            Acr::LEVEL_DEFAULT,
+            SecLevel::LEVEL_CONVENIENT,
             $request
         );
         $this->assertInstanceOf(GoodIDLoginInitiationEndpoint::class, $endpoint);
@@ -89,7 +89,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
         $request = $this->createMock(IncomingRequest::class);
         $request->method('getMethod')
-            ->willReturn('POST');
+            ->willReturn('GET');
         $request->method('getStringParameter')
             ->with('display')
             ->willReturn('page');
@@ -101,7 +101,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            Acr::LEVEL_DEFAULT,
+            SecLevel::LEVEL_CONVENIENT,
             $request
         );
         $this->assertInstanceOf(GoodIDRequestBuilderEndpoint::class, $endpoint);
@@ -123,7 +123,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
         $request = $this->createMock(IncomingRequest::class);
         $request->method('getMethod')
-            ->willReturn('POST');
+            ->willReturn('GET');
         $request->method('getStringParameter')
             ->with('display')
             ->willReturn('popup');
@@ -135,7 +135,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            Acr::LEVEL_DEFAULT,
+            SecLevel::LEVEL_CONVENIENT,
             $request
         );
         $this->assertInstanceOf(GoodIDRequestBuilderEndpoint::class, $endpoint);
@@ -160,7 +160,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            Acr::LEVEL_DEFAULT,
+            SecLevel::LEVEL_CONVENIENT,
             $request
         );
     }

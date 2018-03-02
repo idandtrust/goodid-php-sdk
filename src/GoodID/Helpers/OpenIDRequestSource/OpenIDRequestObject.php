@@ -25,7 +25,7 @@
 namespace GoodID\Helpers\OpenIDRequestSource;
 
 use GoodID\Exception\GoodIDException;
-use GoodID\Helpers\Acr;
+use GoodID\Helpers\SecLevel;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\Key\RSAPublicKey;
@@ -71,9 +71,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $clientId RP client id
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
-     * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
-     *    If $this->claims already has acr, then the requested acr value will be
-     *    the maximum of $claims['id_token']['acr']['value'] and $acr.
+     * @param int|null $secLevel Required security level, @uses SecLevel::LEVEL_*
      * @param int|null $maxAge Maximum authentication age
      *
      * @return string JWT
@@ -85,14 +83,14 @@ class OpenIDRequestObject implements OpenIDRequestSource
         $clientId,
         $redirectUri,
         GoodIDServerConfig $goodIdServerConfig,
-        $acr = Acr::LEVEL_DEFAULT,
+        $secLevel = null,
         $maxAge = null
     ) {
         $array = $this->toArray(
             $clientId,
             $redirectUri,
             $goodIdServerConfig,
-            $acr,
+            $secLevel,
             $maxAge
         );
 
@@ -105,9 +103,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $clientId RP client id
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
-     * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
-     *    If $this->claims already has acr, then the requested acr value will be
-     *    the maximum of $claims['id_token']['acr']['value'] and $acr.
+     * @param int|null $secLevel Required security level, @uses SecLevel::LEVEL_*
      * @param int|null $maxAge Maximum authentication age
      * @return array
      * @throws GoodIDException
@@ -116,14 +112,12 @@ class OpenIDRequestObject implements OpenIDRequestSource
         $clientId,
         $redirectUri,
         GoodIDServerConfig $goodIdServerConfig,
-        $acr = Acr::LEVEL_DEFAULT,
+        $secLevel = null,
         $maxAge = null
     ) {
-        if (!Acr::isValid($acr)) {
-            throw new GoodIDException("Invalid ACR: " . $acr);
+        if (!is_null($secLevel) && !SecLevel::isValid($secLevel)) {
+            throw new GoodIDException("Invalid security level: " . $secLevel);
         }
-
-        $this->claims = $this->addAcr($this->claims, $acr);
 
         $array = [
             'iss' => $clientId,
@@ -134,6 +128,10 @@ class OpenIDRequestObject implements OpenIDRequestSource
             'scope' => self::SCOPE_OPENID,
             'claims' => $this->emptyArrayToObjectRecursive($this->claims)
         ];
+
+        if (!is_null($secLevel)) {
+            $array['sec_level'] = $secLevel;
+        }
 
         if (!is_null($maxAge)) {
             $array['max_age'] = $maxAge;
@@ -152,36 +150,6 @@ class OpenIDRequestObject implements OpenIDRequestSource
     public function generateFromArray(array $array, RSAPrivateKey $sigPrivKey)
     {
         return $sigPrivKey->signAsCompactJws($array);
-    }
-
-    /**
-     * Add acr to claims
-     *
-     * @param array $claims Claims
-     * @param int $acr ACR @uses Acr::LEVEL_*
-     *
-     * @return array Claims
-     */
-    private function addAcr(array $claims, $acr)
-    {
-        if (!isset($claims['id_token'])) {
-            $claims['id_token'] = [];
-        }
-
-        if (!isset($claims['id_token']['acr'])) {
-            $claims['id_token']['acr'] = [];
-        }
-
-        if (isset($claims['id_token']['acr']['value'])) {
-            $claims['id_token']['acr']['value'] = max([
-                $claims['id_token']['acr']['value'],
-                $acr
-            ]);
-        } else {
-            $claims['id_token']['acr']['value'] = $acr;
-        }
-
-        return $claims;
     }
 
     /**

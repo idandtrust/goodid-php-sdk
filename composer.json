@@ -4,7 +4,7 @@
     "keywords": ["goodid", "sdk"],
     "type": "library",
     "homepage": "https://github.com/idandtrust/goodid-php-sdk",
-    "license": "GoodID Platform",
+    "license": "MIT",
     "require": {
         "php": ">=5.6",
         "ext-openssl": "*",

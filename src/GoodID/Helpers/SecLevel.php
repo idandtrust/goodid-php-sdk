@@ -22,64 +22,35 @@
  *
  */
 
-namespace GoodID\Helpers\Request;
-
-use GoodID\Exception\GoodIDException;
+namespace GoodID\Helpers;
 
 /**
- * Incoming Request class
+ * Class represents sec_level parameter
  */
-class IncomingRequest
+class SecLevel
 {
+    const LEVEL_CONVENIENT = 1;
+    const LEVEL_NORMAL = 2;
+    const LEVEL_STRICT = 3;
+
     /**
-     * @var string
+     * @var array 
      */
-    private $method;
+    private static $levels = array(
+        self::LEVEL_CONVENIENT,
+        self::LEVEL_NORMAL,
+        self::LEVEL_STRICT
+    );
 
     /**
-     * @var array
-     */
-    private $params;
-
-    /**
-     * Constructor
-     */
-    public function __construct($stream = 'php://input')
-    {
-        $this->method = isset($_SERVER['REQUEST_METHOD'])
-            ? $_SERVER['REQUEST_METHOD']
-            : null;
-
-        if ($this->method === 'GET') {
-            $this->params = $_GET;
-        } else {
-            throw new GoodIDException("Unsupported request method.");
-        }
-    }
-
-    /**
-     * Get method
+     * Is valid?
      *
-     * @return string
-     */
-    public function getMethod()
-    {
-        return $this->method;
-    }
-
-    /**
-     * Get trimmed string parameter
+     * @param mixed $value
      *
-     * @param string $name Parameter name
-     *
-     * @return string Value
+     * @return bool isValid
      */
-    public function getStringParameter($name)
+    public static function isValid($value)
     {
-        if (isset($this->params[$name])) {
-            return trim($this->params[$name]);
-        }
-
-        return '';
+        return in_array($value, self::$levels);
     }
 }

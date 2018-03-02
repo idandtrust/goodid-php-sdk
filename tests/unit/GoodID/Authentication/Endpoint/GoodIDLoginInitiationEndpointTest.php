@@ -2,7 +2,7 @@
 
 namespace GoodID\Authentication\Endpoint;
 
-use GoodID\Helpers\Acr;
+use GoodID\Helpers\SecLevel;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
@@ -13,22 +13,6 @@ use GoodID\Testing\MockIncomingRequest;
 
 class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Request parameter pairing_nonce missing or empty.
-     */
-    public function itFailsWithoutNonce()
-    {
-        $request = new MockIncomingRequest([
-            'request_uri' => 'http://example.com/some-uri',
-            'redirect_uri' => 'http://example.com/some-uri'
-        ]);
-
-        $ep = $this->buildEndpoint($request);
-        $ep->run();
-    }
-
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
@@ -67,7 +51,6 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
     public function itBuildsRedirectionUrl()
     {
         $request = new MockIncomingRequest([
-            'pairing_nonce' => 'some-nonce-value',
             'request_uri' => 'http://example.com/some-uri',
             'redirect_uri' => 'http://example.com/some-uri'
         ]);
@@ -75,7 +58,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
         $ep = $this->buildEndpoint($request);
         $url = $ep->buildRedirectionURL();
 
-        $this->assertEquals('fast-endpoint-uri?client_id=some-client-id&pairing_nonce=some-nonce-value&state=mock-state-value&display=mobile', $url);
+        $this->assertEquals('fast-endpoint-uri?client_id=some-client-id&state=mock-state-value&nonce=mock-nonce-value&ext=eyJzZGtfdmVyc2lvbiI6IjIuMy4wIiwicHJvZmlsZV92ZXJzaW9uIjoiMS4wIn0&pairing_nonce=&display=mobile', $url);
     }
 
     private function buildEndpoint(IncomingRequest $request)
@@ -97,7 +80,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            Acr::LEVEL_DEFAULT,
+            SecLevel::LEVEL_CONVENIENT,
             $mockServerConfig,
             $mockSessionDataHandler,
             $mockStateNonceHandler,

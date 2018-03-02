@@ -21,15 +21,16 @@ class IncomingRequestTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @expectedException \GoodID\Exception\GoodIDException
+     * @expectedExceptionMessage Unsupported request method.
      */
-    public function itCanBeCreatedForPostRequests()
+    public function itCanNotBeCreatedForPostRequests()
     {
         $_SERVER['REQUEST_METHOD'] = 'POST';
 
         $request = new IncomingRequest($this->getMockInput('{}'));
 
         $this->assertInstanceOf(IncomingRequest::class, $request);
-        $this->assertEquals('POST', $request->getMethod());
     }
 
     /**
@@ -42,20 +43,6 @@ class IncomingRequestTest extends \PHPUnit_Framework_TestCase
         $_SERVER['REQUEST_METHOD'] = 'not_get_nor_post';
 
         $request = new IncomingRequest();
-
-        $this->assertInstanceOf(IncomingRequest::class, $request);
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Unsupported request format.
-     */
-    public function itThrowsExceptionForNonJsonBody()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-
-        $request = new IncomingRequest($this->getMockInput('invalid input'));
 
         $this->assertInstanceOf(IncomingRequest::class, $request);
     }

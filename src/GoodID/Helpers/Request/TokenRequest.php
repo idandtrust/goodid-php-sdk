@@ -29,6 +29,7 @@ use GoodID\Helpers\Config;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Http\HttpRequest;
 use GoodID\Helpers\Http\HttpResponse;
+use GoodID\Helpers\UrlSafeBase64Encoder;
 
 /**
  * Objects of this class can make a request to the GoodID Server's Token Endpoint
@@ -217,7 +218,10 @@ class TokenRequest
             'code' => $authCode,
             'redirect_uri' => $redirectUri,
             'client_id' => $clientId,
-            'sdk_version' => Config::GOODID_PHP_SDK_VERSION
+            'ext' => UrlSafeBase64Encoder::encode(json_encode(array(
+                'sdk_version' => Config::GOODID_PHP_SDK_VERSION,
+                'profile_version' => Config::GOODID_PROFILE_VERSION
+            )))
         ];
 
         if (!is_null($requestUriForValidation)) {

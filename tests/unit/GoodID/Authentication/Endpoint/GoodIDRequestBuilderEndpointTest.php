@@ -2,7 +2,7 @@
 
 namespace GoodID\Authentication\Endpoint;
 
-use GoodID\Helpers\Acr;
+use GoodID\Helpers\SecLevel;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
@@ -169,7 +169,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('mock-nonce-value', $query['nonce']);
         $this->assertEquals('page', $query['display']);
         $this->assertArrayHasKey('ui_locales', $query);
-        $this->assertArrayHasKey('sdk_version', $query);
+        $this->assertArrayHasKey('ext', $query);
 
         $this->assertEquals('https://some.request.uri', $query['request_uri']);
     }
@@ -203,7 +203,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('mock-nonce-value', $query['nonce']);
         $this->assertEquals('page', $query['display']);
         $this->assertArrayHasKey('ui_locales', $query);
-        $this->assertArrayHasKey('sdk_version', $query);
+        $this->assertArrayHasKey('ext', $query);
 
         $this->assertEquals('a-signed-jwt', $query['request']);
     }
@@ -235,7 +235,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('mock-nonce-value', $query['nonce']);
         $this->assertEquals('page', $query['display']);
         $this->assertArrayHasKey('ui_locales', $query);
-        $this->assertArrayHasKey('sdk_version', $query);
+        $this->assertArrayHasKey('ext', $query);
 
         $this->assertEquals('a-jwt', $query['request']);
     }
@@ -366,7 +366,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             $encryptionKey,
             $requestSource,
             'https://redirect.uri',
-            Acr::LEVEL_DEFAULT,
+            SecLevel::LEVEL_CONVENIENT,
             $mockServerConfig,
             $this->mockSessionDataHandler,
             $mockStateNonceHandler,

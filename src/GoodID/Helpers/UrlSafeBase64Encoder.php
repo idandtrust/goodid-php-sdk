@@ -22,64 +22,28 @@
  *
  */
 
-namespace GoodID\Helpers\Request;
-
-use GoodID\Exception\GoodIDException;
+namespace GoodID\Helpers;
 
 /**
- * Incoming Request class
+ * Class UrlSafeBase64Encoder
  */
-class IncomingRequest
+class UrlSafeBase64Encoder
 {
     /**
-     * @var string
-     */
-    private $method;
-
-    /**
-     * @var array
-     */
-    private $params;
-
-    /**
-     * Constructor
-     */
-    public function __construct($stream = 'php://input')
-    {
-        $this->method = isset($_SERVER['REQUEST_METHOD'])
-            ? $_SERVER['REQUEST_METHOD']
-            : null;
-
-        if ($this->method === 'GET') {
-            $this->params = $_GET;
-        } else {
-            throw new GoodIDException("Unsupported request method.");
-        }
-    }
-
-    /**
-     * Get method
-     *
+     * @param string $data
      * @return string
      */
-    public function getMethod()
+    public static function decode($data)
     {
-        return $this->method;
+        return base64_decode(strtr($data, '-_', '+/') . '==');
     }
 
     /**
-     * Get trimmed string parameter
-     *
-     * @param string $name Parameter name
-     *
-     * @return string Value
+     * @param string $data
+     * @return string
      */
-    public function getStringParameter($name)
+    public static function encode($data)
     {
-        if (isset($this->params[$name])) {
-            return trim($this->params[$name]);
-        }
-
-        return '';
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 }

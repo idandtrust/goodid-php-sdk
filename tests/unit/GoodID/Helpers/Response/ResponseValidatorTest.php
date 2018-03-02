@@ -302,7 +302,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function idtokenValidationSucceedsIfAuthCodeHashIsIncorrectButNonceIsConvenient()
+    public function idtokenValidationSucceedsIfAuthCodeHashIsIncorrectButAuthCodeIsConvenient()
     {
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getIssuerUri')
@@ -310,9 +310,6 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
         $stateNonceHandler = $this->createMock(StateNonceHandler::class);
         $stateNonceHandler->method('validateNonce')
             ->willReturn(true);
-        $stateNonceHandler->method('getNonceValidationMode')
-            ->willReturn(StateNonceHandler::NONCE_VALIDATION_MODE_CONVENIENT_TOTP);
-
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
@@ -321,14 +318,14 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
             'dummy-client-secret',
             $this->serverTime,
             null,
-            'some-auth-code'
+            'oacc_some-auth-code'
         );
     }
 
     /**
      * @test
      */
-    public function idtokenValidationSucceedsIfAuthCodeHashIsMissingButNonceIsConvenient()
+    public function idtokenValidationSucceedsIfAuthCodeHashIsMissingButAuthCodeIsConvenient()
     {
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getIssuerUri')
@@ -336,8 +333,6 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
         $stateNonceHandler = $this->createMock(StateNonceHandler::class);
         $stateNonceHandler->method('validateNonce')
             ->willReturn(true);
-        $stateNonceHandler->method('getNonceValidationMode')
-            ->willReturn(StateNonceHandler::NONCE_VALIDATION_MODE_CONVENIENT_TOTP);
 
         $validator = new ResponseValidator('Your client', $serverConfig, $stateNonceHandler);
 
@@ -346,7 +341,7 @@ class ResponseValidatorTest extends \PHPUnit_Framework_TestCase
             'dummy-client-secret',
             $this->serverTime,
             null,
-            'some-auth-code'
+            'oacc_some-auth-code'
         );
     }
 
