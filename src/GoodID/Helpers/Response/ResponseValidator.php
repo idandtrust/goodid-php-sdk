@@ -164,12 +164,13 @@ class ResponseValidator
      * @param int|null $requestedMaxAge Requested max age
      * @param string $authCode Authorization code
      * @param int|null $requestedSecLevel Requested security level.
+     * @param bool $isTotpEnabled
      *
      * @return array Id Token as an array
      *
      * @throws ValidationException on error
      */
-    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime, $requestedMaxAge, $authCode, $requestedSecLevel = null)
+    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime, $requestedMaxAge, $authCode, $requestedSecLevel = null, $isTotpEnabled = false)
     {
         $claims = $this->validate($jwsIdToken);
 
@@ -232,6 +233,13 @@ class ResponseValidator
 
             if (!$isNonceValid) {
                 throw new ValidationException("The received nonce is invalid.");
+            }
+
+            if (in_array($this->stateNonceHandler->getNonceValidationMode($claims[self::CLAIM_NAME_NONCE]), array(
+                StateNonceHandler::NONCE_VALIDATION_MODE_CONVENIENT_TOTP,
+                StateNonceHandler::NONCE_VALIDATION_MODE_NORMAL_TOTP
+            )) && !$isTotpEnabled) {
+                throw new ValidationException("TOTP nonce usage is not enabled.");
             }
 
             $authCodeHash = $this->calculateAuthorizationCodeHash($authCode);

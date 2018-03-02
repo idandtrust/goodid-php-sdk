@@ -82,6 +82,11 @@ class TokenRequest
     private $requestUriForValidation;
 
     /**
+     * @var bool
+     */
+    private $isTotpEnabled;
+
+    /**
      * Make a request to the GoodID Server's Token Endpoint
      *
      * @link https://tools.ietf.org/html/rfc6749#section-4.1.3 Access Token Request
@@ -144,6 +149,7 @@ class TokenRequest
         $this->accessToken = isset($tokenResponseArray['access_token']) ? $tokenResponseArray['access_token'] : null;
         $this->idTokenJwe = $tokenResponseArray['id_token'];
         $this->goodIDServerTime = $tokenResponseArray['server_time'];
+        $this->isTotpEnabled = isset($tokenResponseArray['is_totp_enabled']) ? (bool)$tokenResponseArray['is_totp_enabled'] : false;
     }
 
     /**
@@ -185,6 +191,14 @@ class TokenRequest
     public function getGoodIDServerTime()
     {
         return $this->goodIDServerTime;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTotpEnabled()
+    {
+        return $this->isTotpEnabled;
     }
 
     /**
