@@ -113,7 +113,7 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
                 $this->clientId,
                 $this->redirectUri,
                 $this->goodIdServerConfig,
-                $this->secLevel,
+                $this->acr,
                 $this->maxAge
             );
 

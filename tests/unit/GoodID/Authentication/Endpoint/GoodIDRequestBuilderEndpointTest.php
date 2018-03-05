@@ -2,7 +2,7 @@
 
 namespace GoodID\Authentication\Endpoint;
 
-use GoodID\Helpers\SecLevel;
+use GoodID\Helpers\Acr;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
@@ -366,7 +366,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             $encryptionKey,
             $requestSource,
             'https://redirect.uri',
-            SecLevel::LEVEL_CONVENIENT,
+            Acr::LEVEL_DEFAULT,
             $mockServerConfig,
             $this->mockSessionDataHandler,
             $mockStateNonceHandler,

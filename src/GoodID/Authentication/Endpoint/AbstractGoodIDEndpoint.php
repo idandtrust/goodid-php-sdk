@@ -79,9 +79,9 @@ abstract class AbstractGoodIDEndpoint
     protected $redirectUri;
 
     /**
-     * @var int|null
+     * @var int
      */
-    protected $secLevel;
+    protected $acr;
 
     /**
      *
@@ -113,7 +113,7 @@ abstract class AbstractGoodIDEndpoint
      * @param RSAPrivateKey $encryptionKey
      * @param OpenIDRequestSource $requestSource
      * @param string $redirectUri
-     * @param int|null $secLevel
+     * @param int $acr
      * @param GoodIDServerConfig $goodIdServerConfig
      * @param SessionDataHandlerInterface $sessionDataHandler
      * @param StateNonceHandler $stateNonceHandler
@@ -126,7 +126,7 @@ abstract class AbstractGoodIDEndpoint
         RSAPrivateKey $encryptionKey,
         OpenIDRequestSource $requestSource,
         $redirectUri,
-        $secLevel = null,
+        $acr,
         GoodIDServerConfig $goodIdServerConfig,
         SessionDataHandlerInterface $sessionDataHandler,
         StateNonceHandler $stateNonceHandler,
@@ -149,7 +149,7 @@ abstract class AbstractGoodIDEndpoint
         $this->encryptionKey = $encryptionKey;
         $this->requestSource = $requestSource;
         $this->redirectUri = $redirectUri;
-        $this->secLevel = $secLevel;
+        $this->acr = $acr;
         $this->maxAge = $maxAge;
         $this->goodIdServerConfig = $goodIdServerConfig;
         $this->sessionDataHandler = $sessionDataHandler;

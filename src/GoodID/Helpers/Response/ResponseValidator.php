@@ -30,7 +30,6 @@ use GoodID\Helpers\Claim;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\ECPublicKey;
 use GoodID\Helpers\Logic\LogicEvaluator;
-use GoodID\Helpers\SecLevel;
 use GoodID\Helpers\StateNonceHandler;
 
 /**
@@ -163,14 +162,13 @@ class ResponseValidator
      * @param int $goodIDServerTime GoodID Server time as a Unix timestamp
      * @param int|null $requestedMaxAge Requested max age
      * @param string $authCode Authorization code
-     * @param int|null $requestedSecLevel Requested security level.
      * @param bool $isTotpEnabled
      *
      * @return array Id Token as an array
      *
      * @throws ValidationException on error
      */
-    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime, $requestedMaxAge, $authCode, $requestedSecLevel = null, $isTotpEnabled = false)
+    public function validateIdToken($jwsIdToken, $clientSecret, $goodIDServerTime, $requestedMaxAge, $authCode, $isTotpEnabled = false)
     {
         $claims = $this->validate($jwsIdToken);
 
@@ -201,26 +199,9 @@ class ResponseValidator
             throw new ValidationException("Invalid authentication time.");
         }
 
-        // Security level validation
-        if (!is_null($requestedSecLevel) && $requestedSecLevel !== SecLevel::LEVEL_CONVENIENT) {
-            // response need to contain sec_level
-            if (!isset($claims[Claim::NAME_SEC_LEVEL])) {
-                throw new ValidationException("The response does not contain sec_level.");
-            }
-
-            if ($requestedSecLevel > $claims[Claim::NAME_SEC_LEVEL]) {
-                throw new ValidationException("The response has sec_level lower than the requested sec_level.");
-            }
-        }
+        // @TODO: Need to validate if the received ACR value is correct or not.
 
         $isConvenientTypeOfAuthCode = $this->isConvenientTypeOfAuthCode($authCode);
-
-        if (isset($claims[Claim::NAME_SEC_LEVEL]) 
-            && $isConvenientTypeOfAuthCode 
-            && $claims[Claim::NAME_SEC_LEVEL] !== SecLevel::LEVEL_CONVENIENT)
-        {
-            throw new ValidationException("The sec_level and the type of auth code is not the same.");
-        }
 
         if (!$isConvenientTypeOfAuthCode) {
             $isNonceValid = isset($claims[self::CLAIM_NAME_NONCE])

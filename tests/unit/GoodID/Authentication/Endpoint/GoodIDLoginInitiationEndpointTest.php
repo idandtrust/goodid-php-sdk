@@ -2,7 +2,7 @@
 
 namespace GoodID\Authentication\Endpoint;
 
-use GoodID\Helpers\SecLevel;
+use GoodID\Helpers\Acr;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
@@ -58,7 +58,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
         $ep = $this->buildEndpoint($request);
         $url = $ep->buildRedirectionURL();
 
-        $this->assertEquals('fast-endpoint-uri?client_id=some-client-id&state=mock-state-value&nonce=mock-nonce-value&ext=eyJzZGtfdmVyc2lvbiI6IjIuMy4xIiwicHJvZmlsZV92ZXJzaW9uIjoiMS4wIn0&pairing_nonce=&display=mobile', $url);
+        $this->assertEquals('fast-endpoint-uri?client_id=some-client-id&state=mock-state-value&nonce=mock-nonce-value&ext=eyJzZGtfdmVyc2lvbiI6IjIuMy4yIiwicHJvZmlsZV92ZXJzaW9uIjoiMS4wIn0&pairing_nonce=&display=mobile', $url);
     }
 
     private function buildEndpoint(IncomingRequest $request)
@@ -80,7 +80,7 @@ class GoodIDLoginInitiationEndpointTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            SecLevel::LEVEL_CONVENIENT,
+            Acr::LEVEL_DEFAULT,
             $mockServerConfig,
             $mockSessionDataHandler,
             $mockStateNonceHandler,

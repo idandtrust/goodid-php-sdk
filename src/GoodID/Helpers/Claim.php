@@ -43,5 +43,4 @@ class Claim
     const NAME_EXPIRATION_TIME = "exp";
     const NAME_SUB_JWK = "sub_jwk";
     const NAME_CLAIMS = "claims";
-    const NAME_SEC_LEVEL = "sec_level";
 }

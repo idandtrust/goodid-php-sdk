@@ -27,14 +27,13 @@ namespace GoodID\Helpers;
 /**
  * Authentication Context Class Reference class
  * (Level of assurance)
- * 
- * @deprecated 2.3.0 28/02/2018
  */
 class Acr
 {
     const LEVEL_1 = 1;
     const LEVEL_2 = 2;
     const LEVEL_3 = 3;
+    const LEVEL_4 = 4;
     const LEVEL_DEFAULT = 1;
 
     /**
@@ -46,6 +45,6 @@ class Acr
      */
     public static function isValid($value)
     {
-        return in_array($value, [1, 2, 3]);
+        return in_array($value, [1, 2, 3, 4]);
     }
 }

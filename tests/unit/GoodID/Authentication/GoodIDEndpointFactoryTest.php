@@ -4,7 +4,7 @@ namespace GoodID\Authentication;
 
 use GoodID\Authentication\Endpoint\GoodIDLoginInitiationEndpoint;
 use GoodID\Authentication\Endpoint\GoodIDRequestBuilderEndpoint;
-use GoodID\Helpers\SecLevel;
+use GoodID\Helpers\Acr;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
@@ -18,12 +18,12 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Invalid security level
+     * @expectedExceptionMessage Invalid ACR
      */
-    public function itFailsWhenSecLevelIsInvalid()
+    public function itFailsWhenAcrIsInvalid()
     {
         $serviceLocator = $this->createMock(ServiceLocator::class);
-        $invalidSecLevel = 12;
+        $invalidACR = 12;
         $mockKey = $this->createMock(RSAPrivateKey::class);
         $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
 
@@ -34,7 +34,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            $invalidSecLevel,
+            $invalidACR,
             null
         );
     }
@@ -67,7 +67,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            SecLevel::LEVEL_CONVENIENT,
+            Acr::LEVEL_DEFAULT,
             $request
         );
         $this->assertInstanceOf(GoodIDLoginInitiationEndpoint::class, $endpoint);
@@ -101,7 +101,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            SecLevel::LEVEL_CONVENIENT,
+            Acr::LEVEL_DEFAULT,
             $request
         );
         $this->assertInstanceOf(GoodIDRequestBuilderEndpoint::class, $endpoint);
@@ -135,7 +135,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            SecLevel::LEVEL_CONVENIENT,
+            Acr::LEVEL_DEFAULT,
             $request
         );
         $this->assertInstanceOf(GoodIDRequestBuilderEndpoint::class, $endpoint);
@@ -160,7 +160,7 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $mockKey,
             $mockRequestSource,
             null,
-            SecLevel::LEVEL_CONVENIENT,
+            Acr::LEVEL_DEFAULT,
             $request
         );
     }

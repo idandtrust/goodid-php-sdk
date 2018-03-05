@@ -175,13 +175,9 @@ class GoodIDResponse
                 ? $usedRequestObjectAsArray['max_age']
                 : null;
 
-            $requestedSecLevel = isset($usedRequestObjectAsArray['sec_level']) 
-                ? $usedRequestObjectAsArray['sec_level']
-                : null;
-
             list($goodEncryptionKey, $idTokenJws) = $this->decryptWithAny($encryptionKeys, $tokenRequest->getIdTokenJwe());
 
-            $idToken = $validator->validateIdToken($idTokenJws, $clientSecret, $tokenRequest->getGoodIDServerTime(), $requestedMaxAge, $authCode, $requestedSecLevel, $tokenRequest->isTotpEnabled());
+            $idToken = $validator->validateIdToken($idTokenJws, $clientSecret, $tokenRequest->getGoodIDServerTime(), $requestedMaxAge, $authCode, $tokenRequest->isTotpEnabled());
 
             if ($tokenRequest->hasAccessToken()) {
                 $accessToken = $tokenRequest->getAccessToken();

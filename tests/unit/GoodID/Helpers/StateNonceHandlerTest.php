@@ -353,7 +353,7 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
                 'qQmvC2yRr7QoAdISoEG1r9IAyjRe7zmh0QlFlPBNUO0=',
                 0,
                 1500902310);
-}
+    }
 
     /**
      *
