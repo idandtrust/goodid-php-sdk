@@ -168,13 +168,13 @@ class RSAPublicKey
     }
 
     /**
-     * @param Jwk $jwk
+     * @param JWK $jwk
      * @param string $hash_algorithm
      *
      * @return string
      * @throws GoodIDException on error
      */
-    private function thumbprint(Jwk $jwk, $hash_algorithm='sha256')
+    private function thumbprint(JWK $jwk, $hash_algorithm='sha256')
     {
         if (!in_array($hash_algorithm, hash_algos())) {
             throw new GoodIDException('Unsupported hash algorithm ' . $hash_algorithm);
