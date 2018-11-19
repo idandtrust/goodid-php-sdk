@@ -22,16 +22,53 @@
  *
  */
 
-namespace GoodID\Helpers;
+namespace GoodIDPass;
 
-/**
- * This class contains the main configuration values corresponding to this version of the GoodID PHP SDK
- */
-class Config
+class GoodidPassTemplate
 {
     /**
-     * The version of this SDK
+     * @var string
      */
-    const GOODID_PHP_SDK_VERSION = "2.4.0";
-    const GOODID_PROFILE_VERSION = "1.0";
+    private $clientId;
+
+    /**
+     * @var string
+     */
+    private $templateId;
+
+    /**
+     * @var array
+     */
+    private $data;
+
+    public function __construct($clientId, $templateId, array $data)
+    {
+        $this->clientId = $clientId;
+        $this->templateId = $templateId;
+        $this->data = $data;
+    }
+
+    /**
+     * @return string
+     */
+    public function getClientId()
+    {
+        return $this->clientId;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTemplateId()
+    {
+        return $this->templateId;
+    }
+
+    /**
+     * @return array
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
 }

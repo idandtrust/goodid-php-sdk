@@ -22,16 +22,10 @@
  *
  */
 
-namespace GoodID\Helpers;
+namespace GoodIDPass\PassApi;
 
-/**
- * This class contains the main configuration values corresponding to this version of the GoodID PHP SDK
- */
-class Config
+use RuntimeException;
+
+class PassApiException extends RuntimeException
 {
-    /**
-     * The version of this SDK
-     */
-    const GOODID_PHP_SDK_VERSION = "2.4.0";
-    const GOODID_PROFILE_VERSION = "1.0";
 }

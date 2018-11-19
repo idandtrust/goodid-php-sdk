@@ -31,6 +31,8 @@ use GoodID\Helpers\SessionDataHandler;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\Helpers\TotpValidator;
+use GoodIDPass\GoodidPassService;
+use GoodIDPass\PassApi\CurlPassApi;
 
 /**
  * Utility class
@@ -69,6 +71,11 @@ class ServiceLocator
      * @var RequestFactory
      */
     private $requestFactory;
+
+    /**
+     * @var GoodidPassService
+     */
+    private $passService;
 
     /**
      * @return GoodIDServerConfig
@@ -212,5 +219,48 @@ class ServiceLocator
     protected function createRequestFactory()
     {
         return new RequestFactory();
+    }
+
+    /**
+     * @param string $clientId
+     * @param string $clientSecret
+     *
+     * @return GoodidPassService
+     */
+    public function getPassService($clientId, $clientSecret)
+    {
+        if (!isset($this->passService)) {
+            $this->passService = $this->createPassService($clientId, $clientSecret);
+        }
+
+        return $this->passService;
+    }
+
+    /**
+     * @return GoodidPassService
+     */
+    protected function createPassService($clientId, $clientSecret)
+    {
+        return new GoodidPassService($this->getPassApi($clientId, $clientSecret));
+    }
+
+    public function getPassApi($clientId, $clientSecret)
+    {
+        if (!isset($this->passApi)) {
+            $this->passApi = $this->createPassApi($clientId, $clientSecret);
+        }
+
+        return $this->passApi;
+    }
+
+    /**
+     * @param $clientId
+     * @param $clientSecret
+     *
+     * @return CurlPassApi
+     */
+    protected function createPassApi($clientId, $clientSecret)
+    {
+        return new CurlPassApi($clientId, $clientSecret, $this->getServerConfig()->getPassUri());
     }
 }

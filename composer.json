@@ -19,7 +19,8 @@
     },
     "autoload": {
         "psr-4": {
-            "GoodID\\": "src/GoodID/"
+            "GoodID\\": "src/GoodID/",
+            "GoodIDPass\\": "src/GoodIDPass/"
         }
     },
     "autoload-dev": {

@@ -54,6 +54,14 @@ class GoodIDServerConfig
     }
 
     /**
+     * @return string GoodID Pass URI
+     */
+    public function getPassUri()
+    {
+        return 'https://pass.goodid.net';
+    }
+
+    /**
      * @return string GoodID Authorization Endpoint URI
      */
     public function getAuthorizationEndpointUri()
