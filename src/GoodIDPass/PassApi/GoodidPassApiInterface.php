@@ -80,6 +80,16 @@ interface GoodidPassApiInterface
 
     /**
      * @param string $serial
+     * @param string $language
+     * @param string $recipient
+     * @param array $data
+     *
+     * @throws PassApiException
+     */
+    public function sendEmailAboutPass($serial, $language, $recipient, array $data);
+
+    /**
+     * @param string $serial
      * @param string $sub
      *
      * @return array

@@ -134,6 +134,23 @@ class CurlPassApi implements GoodidPassApiInterface
 
     /**
      * @param string $serial
+     * @param string $language
+     * @param string $recipient
+     * @param array $data
+     *
+     * @throws PassApiException
+     */
+    public function sendEmailAboutPass($serial, $language, $recipient, array $data)
+    {
+        $this->invokeCurl('/passes/' . $serial . '/send', 'POST', http_build_query([
+            'recipient' => $recipient,
+            'language' => $language,
+            'data' => $data,
+        ]));
+    }
+
+    /**
+     * @param string $serial
      * @param string $sub
      *
      * @return array
@@ -245,10 +262,13 @@ class CurlPassApi implements GoodidPassApiInterface
             $headers = substr($response, 0, $headerSize);
             $body = substr($response, $headerSize);
 
-            $data = json_decode($body, true);
+            $data = null;
             $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if ($data === null) {
-                throw new PassApiException('HTTP ' . $statusCode . '; could not parse response as json');
+            if ($statusCode !== 204) {
+                $data = json_decode($body, true);
+                if ($data === null) {
+                    throw new PassApiException('HTTP ' . $statusCode . '; could not parse response as json');
+                }
             }
             if ($statusCode >= 400) {
                 $message = 'Upstream error: ' . $data['error'];

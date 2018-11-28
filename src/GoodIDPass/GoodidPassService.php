@@ -92,6 +92,17 @@ class GoodidPassService
 
     /**
      * @param string $serial
+     * @param string $language
+     * @param string $recipient
+     * @param array $data
+     */
+    public function sendEmailAboutPass($serial, $language, $recipient, array $data)
+    {
+        $this->passApi->sendEmailAboutPass($serial, $language, $recipient, $data);
+    }
+
+    /**
+     * @param string $serial
      * @param string $sub
      *
      * @return GoodidPass
