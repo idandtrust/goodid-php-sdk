@@ -145,7 +145,7 @@ class GoodidPassService
     {
         return new GoodidPass(
             $data['serial'],
-            DateTimeImmutable::createFromFormat(DateTimeInterface::ISO8601, $data['lastModified']),
+            DateTimeImmutable::createFromFormat('Y-m-d\TH:i:sO', $data['lastModified']),
             $data['clientId'],
             $data['templateId'],
             $data['passUrl'],
