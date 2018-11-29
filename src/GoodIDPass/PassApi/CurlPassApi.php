@@ -241,7 +241,7 @@ class CurlPassApi implements GoodidPassApiInterface
         try {
             $curlopts = [
                 CURLOPT_URL => $this->passEndpoint . $url,
-                CURLOPT_USERPWD => $this->clientId . ':' . $this->clientSecret,
+                CURLOPT_USERPWD => urlencode($this->clientId) . ':' . urlencode($this->clientSecret),
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HEADER => 1,
             ];
