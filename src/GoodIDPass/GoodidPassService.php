@@ -25,7 +25,6 @@
 namespace GoodIDPass;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 use GoodIDPass\PassApi\GoodidPassApiInterface;
 
 class GoodidPassService
