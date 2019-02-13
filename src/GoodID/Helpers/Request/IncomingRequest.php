@@ -52,6 +52,8 @@ class IncomingRequest
 
         if ($this->method === 'GET') {
             $this->params = $_GET;
+        } elseif ($this->method === 'POST') {
+            $this->params = $_POST;
         } else {
             throw new GoodIDException("Unsupported request method.");
         }

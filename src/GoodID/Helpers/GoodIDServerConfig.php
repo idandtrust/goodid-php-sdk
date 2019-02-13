@@ -24,17 +24,29 @@
 
 namespace GoodID\Helpers;
 
+use GoodID\Exception\GoodIDException;
+use GoodID\Exception\ValidationException;
+use GoodID\Helpers\Http\HttpRequest;
+use GoodID\Helpers\Http\HttpResponse;
+use Jose\Object\JWKSet;
+use Jose\Object\JWKSetInterface;
+
 /**
  * This class provides the URI's of the GoodID endpoints
  */
 class GoodIDServerConfig
 {
     /**
+     * @var JWKSetInterface|null
+     */
+    private $keystore;
+
+    /**
      * @return string GoodID Issuer URI
      */
     public function getIssuerUri()
     {
-        return "https://goodid.net";
+        return "https://idp.goodid.net";
     }
 
     /**
@@ -50,7 +62,7 @@ class GoodIDServerConfig
      */
     public function getAudienceUri()
     {
-        return $this->getIdpUri() . '/';
+        return $this->getIssuerUri();
     }
 
     /**
@@ -107,5 +119,35 @@ class GoodIDServerConfig
     public function getJwksUri()
     {
         return $this->getIdpUri() . '/jwks.json';
+    }
+
+    /**
+     * @return JWKSetInterface
+     *
+     * @throws ValidationException
+     */
+    public function getKeystore()
+    {
+        if (!isset($this->keystore)) {
+            $response = (new HttpRequest($this->getJwksUri()))->get();
+
+            if ($response->getHttpStatusCode() !== HttpResponse::HTTP_STATUS_CODE_OK) {
+                throw new ValidationException('GoodID jwksuri unreachable');
+            }
+
+            try {
+                $jwks = $response->getBodyJsonDecoded();
+            } catch (GoodIDException $e) {
+                throw new ValidationException('GoodID jwksuri content is not valid JSON');
+            }
+
+            if (!is_array($jwks)) {
+                throw new ValidationException('GoodID jwksuri content is not an object');
+            }
+
+            $this->keystore = new JWKSet($jwks);
+        }
+
+        return $this->keystore;
     }
 }

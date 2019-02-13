@@ -49,7 +49,7 @@ class RequestFactory
         $clientSecret,
         $redirectUri,
         $authCode,
-        $requestUriForValidation
+        $requestUriForValidation // TODO: remove
     ) {
         return new TokenRequest(
             $clientId,

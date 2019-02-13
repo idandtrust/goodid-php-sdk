@@ -146,7 +146,7 @@ class TokenRequest
 
         $this->validateResponseContent($tokenResponseString, $tokenResponseArray);
 
-        $this->accessToken = isset($tokenResponseArray['access_token']) ? $tokenResponseArray['access_token'] : null;
+        $this->accessToken = $tokenResponseArray['access_token'];
         $this->idTokenJwe = $tokenResponseArray['id_token'];
         $this->goodIDServerTime = $tokenResponseArray['server_time'];
         $this->isTotpEnabled = isset($tokenResponseArray['is_totp_enabled']) ? (bool)$tokenResponseArray['is_totp_enabled'] : false;

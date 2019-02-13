@@ -51,26 +51,18 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
     {
         $this->sessionDataHandler->removeAll();
 
-        if (!$this->incomingRequest->getStringParameter('endpoint_uri')) {
-            throw new GoodIDException('Request parameter endpoint_uri missing or empty.');
+        $iss = $this->incomingRequest->getStringParameter('iss');
+        if (!$iss || $iss !== $this->goodIdServerConfig->getIssuerUri()) {
+            throw new GoodIDException('Iss parameter is missing or is not ' . $this->goodIdServerConfig->getIssuerUri());
         }
 
-        if (!$this->incomingRequest->getStringParameter('current_url')) {
-            throw new GoodIDException('Request parameter current_url missing or empty.');
-        }
-
-        $display = $this->incomingRequest->getStringParameter('display');
-
-        if (!$display) {
-            throw new GoodIDException('Request parameter display missing or empty.');
-        }
+        $loginHint = $this->incomingRequest->getStringParameter('login_hint');
 
         $ext = $this->incomingRequest->getStringParameter('ext');
 
         if ($ext) {
-            try {
-                $ext = json_decode(UrlSafeBase64Encoder::decode($ext), true);
-            } catch (\Exception $e) {
+            $ext = json_decode(UrlSafeBase64Encoder::decode($ext), true);
+            if (!is_array($ext)) {
                 throw new GoodIDException('Request parameter config is invalid.');
             }
         } else {
@@ -89,14 +81,12 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
             'scope' => OpenIDRequestObject::SCOPE_OPENID,
             'state' => $this->stateNonceHandler->generateState(),
             'nonce' => $this->stateNonceHandler->generateNonce(),
-            'display' => $display,
             'ui_locales' => $uiLocales,
             'ext' => UrlSafeBase64Encoder::encode(json_encode($ext))
         ];
-
-        $this->sessionDataHandler->set(
-            SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED,
-            false);
+        if ($loginHint) {
+            $queryParams['login_hint'] = $loginHint;
+        }
 
         $this->sessionDataHandler->set(
             SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI,

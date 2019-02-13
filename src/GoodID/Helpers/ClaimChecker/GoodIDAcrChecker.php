@@ -22,25 +22,30 @@
  *
  */
 
-namespace GoodID\Helpers;
+namespace GoodID\Helpers\ClaimChecker;
 
-/**
- * Class Claim
- *
- * @link http://www.iana.org/assignments/jwt/jwt.xhtml JWT claims list
- * There are other claims supported by GoodID
- *
- * Only the architecturally important claims are declared here
- * All claims can simply be referred to by their names by the RP's code
- */
-class Claim
+use Jose\Checker\ClaimCheckerInterface;
+use Jose\Object\JWTInterface;
+
+class GoodIDAcrChecker implements ClaimCheckerInterface
 {
-    const NAME_ISSUER = "iss";
-    const NAME_SUBJECT = "sub";
-    const NAME_AUDIENCE = "aud";
-    const NAME_AUTH_TIME = "auth_time";
-    const NAME_ISSUED_AT = "iat";
-    const NAME_EXPIRATION_TIME = "exp";
-    const NAME_SUB_JWK = "sub_jwk";
-    const NAME_CLAIMS = "claims";
+    /**
+     * @param \Jose\Object\JWTInterface $jwt
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return string[]
+     */
+    public function checkClaim(JWTInterface $jwt)
+    {
+        if (!$jwt->hasClaim('acr')) {
+            return [];
+        }
+
+        if (!in_array($jwt->getClaim('acr'), ['1', '2', '3', '4'], true)) {
+            throw new \InvalidArgumentException('Invalid acr');
+        }
+
+        return ['acr'];
+    }
 }

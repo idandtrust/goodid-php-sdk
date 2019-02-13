@@ -71,7 +71,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $clientId RP client id
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
-     * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
+     * @param string $acr Required ACR level of assurance, @uses Acr::LEVEL_*
      *    If $this->claims already has acr, then the requested acr value will be
      *    the maximum of $claims['id_token']['acr']['value'] and $acr.
      * @param int|null $maxAge Maximum authentication age
@@ -105,7 +105,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $clientId RP client id
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
-     * @param int $acr Required ACR level of assurance, @uses Acr::LEVEL_*
+     * @param string $acr Required ACR level of assurance, @uses Acr::LEVEL_*
      *    If $this->claims already has acr, then the requested acr value will be
      *    the maximum of $claims['id_token']['acr']['value'] and $acr.
      * @param int|null $maxAge Maximum authentication age
@@ -136,6 +136,9 @@ class OpenIDRequestObject implements OpenIDRequestSource
         ];
 
         if (!is_null($maxAge)) {
+            if ($maxAge < 0) {
+                throw new \InvalidArgumentException('max_age can not be negative');
+            }
             $array['max_age'] = $maxAge;
         }
 
@@ -158,7 +161,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * Add acr to claims
      *
      * @param array $claims Claims
-     * @param int $acr ACR @uses Acr::LEVEL_*
+     * @param string $acr ACR @uses Acr::LEVEL_*
      *
      * @return array Claims
      */
@@ -173,9 +176,9 @@ class OpenIDRequestObject implements OpenIDRequestSource
         }
 
         if (isset($claims['id_token']['acr']['value'])) {
-            $claims['id_token']['acr']['value'] = max([
-                $claims['id_token']['acr']['value'],
-                $acr
+            $claims['id_token']['acr']['value'] = (string) max([
+                (int) $claims['id_token']['acr']['value'],
+                (int) $acr
             ]);
         } else {
             $claims['id_token']['acr']['value'] = $acr;

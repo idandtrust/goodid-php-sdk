@@ -26,13 +26,17 @@ namespace GoodID;
 
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Request\RequestFactory;
+use GoodID\Helpers\Response\IdTokenVerifier;
 use GoodID\Helpers\Response\ResponseValidator;
+use GoodID\Helpers\Response\TokenExtractor;
+use GoodID\Helpers\Response\UserinfoVerifier;
 use GoodID\Helpers\SessionDataHandler;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
-use GoodID\Helpers\TotpValidator;
 use GoodIDPass\GoodidPassService;
 use GoodIDPass\PassApi\CurlPassApi;
+use Jose\Object\JWKSetInterface;
+use Jose\Object\JWSInterface;
 
 /**
  * Utility class
@@ -53,11 +57,6 @@ class ServiceLocator
     private $sessionDataHandler;
 
     /**
-     * @var TotpValidator
-     */
-    private $totpValidator;
-
-    /**
      * @var StateNonceHandler
      */
     private $stateNonceHandler;
@@ -76,6 +75,11 @@ class ServiceLocator
      * @var GoodidPassService
      */
     private $passService;
+
+    /**
+     * @var TokenExtractor
+     */
+    private $tokenExtractor;
 
     /**
      * @return GoodIDServerConfig
@@ -134,26 +138,6 @@ class ServiceLocator
     }
 
     /**
-     * @return TotpValidator
-     */
-    public function getTotpValidator()
-    {
-        if (!isset($this->totpValidator)) {
-            $this->totpValidator = $this->createTotpValidator();
-        }
-
-        return $this->totpValidator;
-    }
-
-    /**
-     * @return TotpValidator
-     */
-    protected function createTotpValidator()
-    {
-        return new TotpValidator();
-    }
-
-    /**
      * @return StateNonceHandler
      */
     public function getStateNonceHandler()
@@ -170,35 +154,27 @@ class ServiceLocator
      */
     protected function createStateNonceHandler()
     {
-        return new StateNonceHandler($this->getSessionDataHandler(), $this->getTotpValidator());
+        return new StateNonceHandler($this->getSessionDataHandler());
     }
 
     /**
-     * @param string $clientId
-     *
      * @return ResponseValidator
      */
-    public function getResponseValidator($clientId)
+    public function getResponseValidator()
     {
         if (!isset($this->responseValidator)) {
-            $this->responseValidator = $this->createResponseValidator($clientId);
+            $this->responseValidator = $this->createResponseValidator();
         }
 
         return $this->responseValidator;
     }
 
     /**
-     * @param string $clientId
-     *
      * @return ResponseValidator
      */
-    protected function createResponseValidator($clientId)
+    protected function createResponseValidator()
     {
-        return new ResponseValidator(
-            $clientId,
-            $this->getServerConfig(),
-            $this->getStateNonceHandler()
-        );
+        return new ResponseValidator();
     }
 
     /**
@@ -263,4 +239,50 @@ class ServiceLocator
     {
         return new CurlPassApi($clientId, $clientSecret, $this->getServerConfig()->getPassUri());
     }
+
+    /**
+     * @param JWKSetInterface $rpKeys
+     *
+     * @return TokenExtractor
+     */
+    public function getTokenExtractor(JWKSetInterface $rpKeys)
+    {
+        try {
+            $serverKeys = $this->getServerConfig()->getKeystore();
+        } catch (Exception\ValidationException $ex) {
+            throw new \RuntimeException('Error fetching server keys', 0, $ex);
+        }
+
+        return new TokenExtractor($rpKeys, $serverKeys);
+    }
+
+    /**
+     * @param string $clientId
+     * @param null|int $requestedMaxAge
+     * @param boolean $authTimeRequested
+     * @param null|string $nonce
+     *
+     * @return IdTokenVerifier
+     */
+    public function getIdTokenVerifier($clientId, $requestedMaxAge, $authTimeRequested, $nonce)
+    {
+        return new IdTokenVerifier(
+            $this->getServerConfig()->getIssuerUri(),
+            $clientId,
+            $requestedMaxAge,
+            $authTimeRequested,
+            $nonce
+        );
+    }
+
+    /**
+     * @param JWSInterface $idToken
+     *
+     * @return UserinfoVerifier
+     */
+    public function getUserinfoVerifier(JWSInterface $idToken)
+    {
+        return new UserinfoVerifier($idToken);
+    }
 }
+

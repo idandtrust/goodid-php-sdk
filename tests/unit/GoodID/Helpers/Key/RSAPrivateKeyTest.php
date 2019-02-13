@@ -36,28 +36,6 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itCanDecryptPayload()
-    {
-        $payload = 'payload to encrypt';
-        $key = new RSAPrivateKey($this->privateKey);
-
-        $this->assertEquals($payload, $key->decryptCompactJwe($this->jwe));
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Can not decrypt: Unable to decrypt the JWE.
-     */
-    public function itFailsWhenUsingWrongKey()
-    {
-        $key = new RSAPrivateKey($this->privateKey);
-        $key->decryptCompactJwe($this->jweEncryptedWithDifferentKey);
-    }
-
-    /**
-     * @test
-     */
     public function itCanGetThePublicKeyAsJwkArray()
     {
         $privateKey = new RSAPrivateKey($this->privateKey);

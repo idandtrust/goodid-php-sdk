@@ -38,17 +38,6 @@ use GoodID\Helpers\StateNonceHandler;
 abstract class AbstractGoodIDEndpoint
 {
     /**
-     * The smallest accepted value for max_age
-     */
-    const MAX_AGE_MIN_VALUE = 3600;
-
-    /**
-     * The largest accepted value for max_age
-     * 60 days in seconds
-     */
-    const MAX_AGE_MAX_VALUE = 5184000;
-
-    /**
      * @var IncomingRequest
      */
     protected $incomingRequest;
@@ -79,7 +68,7 @@ abstract class AbstractGoodIDEndpoint
     protected $redirectUri;
 
     /**
-     * @var int
+     * @var string
      */
     protected $acr;
 
@@ -113,7 +102,7 @@ abstract class AbstractGoodIDEndpoint
      * @param RSAPrivateKey $encryptionKey
      * @param OpenIDRequestSource $requestSource
      * @param string $redirectUri
-     * @param int $acr
+     * @param string $acr
      * @param GoodIDServerConfig $goodIdServerConfig
      * @param SessionDataHandlerInterface $sessionDataHandler
      * @param StateNonceHandler $stateNonceHandler
@@ -136,11 +125,8 @@ abstract class AbstractGoodIDEndpoint
             throw new GoodIDException('$clientId can not be empty');
         }
 
-        if (!is_null($maxAge) &&
-            (!is_int($maxAge) || $maxAge < self::MAX_AGE_MIN_VALUE || $maxAge > self::MAX_AGE_MAX_VALUE)
-        ) {
-            throw new GoodIDException('$maxAge must be null or an int in the range ['
-                . self::MAX_AGE_MIN_VALUE .  ', ' . self::MAX_AGE_MAX_VALUE . ']');
+        if (!is_null($maxAge) && (!is_int($maxAge) || $maxAge < 0)) {
+            throw new GoodIDException('$maxAge must be null or a non-negative integer');
         }
 
         $this->incomingRequest = $incomingRequest;

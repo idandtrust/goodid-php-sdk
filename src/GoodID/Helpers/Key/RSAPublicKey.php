@@ -26,10 +26,11 @@ namespace GoodID\Helpers\Key;
 
 use Base64Url\Base64Url;
 use GoodID\Exception\GoodIDException;
-use Jose\Factory\JWEFactory;
+use Jose\Factory\JWKFactory;
 use Jose\KeyConverter\RSAKey as SpomkyRSAKey;
 use Jose\Loader;
 use Jose\Object\JWK;
+use Jose\Object\JWKInterface;
 
 /**
  * An RSA key class with sign/verify and encrypt/decrypt capabilities in the JWS/JWE format.
@@ -49,44 +50,9 @@ class RSAPublicKey
     const SIG_ALG_VALUE_RS256 = "RS256";
 
     /**
-     * Key encryption algorithm parameter name
-     * (Key encryption is used to encrypt a newly generated symmetric key, see: key wrapping)
-     */
-    const KEY_ENC_ALG_KEY = "alg";
-
-    /**
-     * Key encryption algorithm:
-     * RSAES OAEP using SHA-1 and MGF1 with SHA-1
-     */
-    const KEY_ENC_ALG_VALUE_RSA_OAEP = "RSA-OAEP";
-
-    /**
      * Key Identifier param.
      */
     const KEY_ID = "kid";
-
-    /**
-     * Content encryption algorithm parameter name
-     * (Content encryption is used to encrypt the plaintext with a newly generated symmetric key, see: key wrapping)
-     */
-    const CONTENT_ENC_ALG_KEY = "enc";
-
-    /**
-     * Content encryption algorithm:
-     * AES_256_CBC_HMAC_SHA_512 authenticated encryption algorithm
-     */
-    const CONTENT_ENC_ALG_VALUE_A256CBC_HS512 = "A256CBC-HS512";
-
-    /**
-     * Compression algorithm parameter name
-     */
-    const COMPRESSION_ALG_KEY = "zip";
-
-    /**
-     * Compression algorithm:
-     * DEFLATE
-     */
-    const COMPRESSION_ALG_VALUE_DEF = "DEF";
 
     /**
      * @var JWK
@@ -129,26 +95,6 @@ class RSAPublicKey
     }
 
     /**
-     * Encrypts the given string as the payload of a compact JWE
-     *
-     * @param string $payload Payload (typically a compact JWS)
-     *
-     * @return string
-     */
-    public function encryptAsCompactJwe($payload)
-    {
-        return JWEFactory::createJWEToCompactJSON(
-            $payload,
-            $this->jwk,
-            [
-                self::KEY_ENC_ALG_KEY => self::KEY_ENC_ALG_VALUE_RSA_OAEP,
-                self::CONTENT_ENC_ALG_KEY => self::CONTENT_ENC_ALG_VALUE_A256CBC_HS512,
-                self::COMPRESSION_ALG_KEY => self::COMPRESSION_ALG_VALUE_DEF,
-            ]
-        );
-    }
-
-    /**
      * Get the public key as a JWK array
      *
      * @return array
@@ -169,21 +115,31 @@ class RSAPublicKey
 
     /**
      * @param JWK $jwk
-     * @param string $hash_algorithm
      *
      * @return string
      * @throws GoodIDException on error
      */
-    private function thumbprint(JWK $jwk, $hash_algorithm='sha256')
+    private function thumbprint(JWK $jwk)
     {
-        if (!in_array($hash_algorithm, hash_algos())) {
-            throw new GoodIDException('Unsupported hash algorithm ' . $hash_algorithm);
-        }
-
         $values = array_intersect_key($jwk->getAll(), array_flip(['kty', 'n', 'e']));
         ksort($values);
         $input = json_encode($values);
 
-        return Base64Url::encode(hash($hash_algorithm, $input, true));
+        return Base64Url::encode(hash('sha256', $input, true));
+    }
+
+    /**
+     * @param bool $includePrivate
+     *
+     * @return JWKInterface
+     */
+    public function asSpomkyKey($params = [], $includePrivate = false)
+    {
+        $jwk = $this->jwk;
+        if (!$includePrivate) {
+            $jwk = $jwk->toPublic();
+        }
+
+        return JWKFactory::createFromValues(array_merge($jwk->getAll(), $params));
     }
 }

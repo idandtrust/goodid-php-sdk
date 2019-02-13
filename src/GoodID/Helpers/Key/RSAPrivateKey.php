@@ -26,7 +26,6 @@ namespace GoodID\Helpers\Key;
 
 use GoodID\Exception\GoodIDException;
 use Jose\Factory\JWSFactory;
-use Jose\Loader;
 
 /**
  * RSAPrivateKey class
@@ -67,30 +66,5 @@ class RSAPrivateKey extends RSAPublicKey
             self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
             self::KEY_ID => $this->getKid()
         ]);
-    }
-
-    /**
-     * Decrypts the payload of the given compact JWE
-     *
-     * @param string $compactJwe Compact JWE
-     *
-     * @return string Payload (typically a compact JWS)
-     *
-     * @throws GoodIDException
-     */
-    public function decryptCompactJwe($compactJwe)
-    {
-        try {
-            $loader = new Loader();
-
-            return $loader->loadAndDecryptUsingKey(
-                $compactJwe,
-                $this->jwk,
-                [self::KEY_ENC_ALG_VALUE_RSA_OAEP],
-                [self::CONTENT_ENC_ALG_VALUE_A256CBC_HS512]
-            )->getPayload();
-        } catch (\Exception $e) {
-            throw new GoodIDException("Can not decrypt: " . $e->getMessage());
-        }
     }
 }

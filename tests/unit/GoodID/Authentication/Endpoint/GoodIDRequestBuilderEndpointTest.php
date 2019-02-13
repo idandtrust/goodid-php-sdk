@@ -19,62 +19,12 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Request parameter endpoint_uri missing or empty.
-     */
-    public function itFailsWithoutEndpointUri()
-    {
-        $request = new MockIncomingRequest([
-            'current_url' => 'https://current.url',
-            'display' => 'page',
-        ]);
-
-        $ep = $this->buildEndpoint($request);
-        $ep->run();
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Request parameter current_url missing or empty.
-     */
-    public function itFailsWithoutCurrentUrl()
-    {
-        $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'display' => 'page',
-        ]);
-
-        $ep = $this->buildEndpoint($request);
-        $ep->run();
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Request parameter display missing or empty.
-     */
-    public function itFailsWithoutDisplay()
-    {
-        $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-        ]);
-
-        $ep = $this->buildEndpoint($request);
-        $ep->run();
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
      * @expectedExceptionMessage Unsupported OpenIDRequestSource
      */
     public function itFailsWithUnknownRequestSource()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $ep = $this->buildEndpoint($request);
@@ -84,14 +34,12 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage maxAge must be null or an int in the range [3600, 5184000]
+     * @expectedExceptionMessage maxAge must be null or a non-negative integer
      */
     public function itFailsIfMaxAgeIsNotInt()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestURI::class);
@@ -104,43 +52,46 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage maxAge must be null or an int in the range [3600, 5184000]
+     * @expectedExceptionMessage Iss parameter is missing or is not
      */
-    public function itFailsIfMaxAgeIsTooSmall()
+    public function itFailsIfIssuerIsMissing()
     {
-        $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
-        ]);
+        $request = new MockIncomingRequest([]);
 
-        $requestSource = $this->createMock(OpenIDRequestURI::class);
-        $requestSource->method('getRequestUri')
-            ->willReturn('https://some.request.uri');
-
-        $this->buildEndpoint($request, $requestSource, 3599);
+        $ep = $this->buildEndpoint($request, $this->createMock(OpenIDRequestSource::class));
+        $ep->buildRequestUrl();
     }
 
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage maxAge must be null or an int in the range [3600, 5184000]
+     * @expectedExceptionMessage Iss parameter is missing or is not
      */
-    public function itFailsIfMaxAgeIsTooBig()
+    public function itFailsIfIssuerIsInvalid()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://invalid-issuer',
         ]);
 
-        $requestSource = $this->createMock(OpenIDRequestURI::class);
-        $requestSource->method('getRequestUri')
-            ->willReturn('https://some.request.uri');
-
-        $this->buildEndpoint($request, $requestSource, 5184001);
+        $ep = $this->buildEndpoint($request, $this->createMock(OpenIDRequestSource::class));
+        $ep->buildRequestUrl();
     }
 
+    /**
+     * @test
+     * @expectedException \GoodID\Exception\GoodIDException
+     * @expectedExceptionMessage Request parameter config is invalid
+     */
+    public function itFailsIfExtMetaExistsButInvalid()
+    {
+        $request = new MockIncomingRequest([
+            'iss' => 'https://some-issuer',
+            'ext' => 'invalid'
+        ]);
+
+        $ep = $this->buildEndpoint($request, $this->createMock(OpenIDRequestSource::class));
+        $ep->buildRequestUrl();
+    }
 
     /**
      * @test
@@ -148,9 +99,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     public function itCreatesRequestUrlUsingRequestUri()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestURI::class);
@@ -167,7 +116,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('openid', $query['scope']);
         $this->assertEquals('mock-state-value', $query['state']);
         $this->assertEquals('mock-nonce-value', $query['nonce']);
-        $this->assertEquals('page', $query['display']);
         $this->assertArrayHasKey('ui_locales', $query);
         $this->assertArrayHasKey('ext', $query);
 
@@ -180,9 +128,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     public function itCreatesRequestUrlUsingRequestObject()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestObject::class);
@@ -201,7 +147,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('openid', $query['scope']);
         $this->assertEquals('mock-state-value', $query['state']);
         $this->assertEquals('mock-nonce-value', $query['nonce']);
-        $this->assertEquals('page', $query['display']);
         $this->assertArrayHasKey('ui_locales', $query);
         $this->assertArrayHasKey('ext', $query);
 
@@ -214,9 +159,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     public function itCreatesRequestUrlUsingRequestObjectJWT()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestObjectJWT::class);
@@ -233,7 +176,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('openid', $query['scope']);
         $this->assertEquals('mock-state-value', $query['state']);
         $this->assertEquals('mock-nonce-value', $query['nonce']);
-        $this->assertEquals('page', $query['display']);
         $this->assertArrayHasKey('ui_locales', $query);
         $this->assertArrayHasKey('ext', $query);
 
@@ -246,9 +188,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     public function itCallsSessionDataHandlerWhenUsingRequestUri()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestURI::class);
@@ -262,10 +202,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->mockSessionDataHandler->expects($this->any())
             ->method('set')
             ->withConsecutive(
-                [
-                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED),
-                    $this->equalTo(false)
-                ],
                 [
                     $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
@@ -281,9 +217,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     public function itCallsSessionDataHandlerWhenUsingRequestObject()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestObject::class);
@@ -300,10 +234,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->method('set')
             ->withConsecutive(
                 [
-                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED),
-                    $this->equalTo(false)
-                ],
-                [
                     $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
                 ]
@@ -318,9 +248,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
     public function itCallsSessionDataHandlerWhenUsingRequestObjectJWT()
     {
         $request = new MockIncomingRequest([
-            'endpoint_uri' => 'https://some.endpoint.uri',
-            'current_url' => 'https://current.url',
-            'display' => 'page',
+            'iss' => 'https://some-issuer',
         ]);
 
         $requestSource = $this->createMock(OpenIDRequestObjectJWT::class);
@@ -334,10 +262,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $this->mockSessionDataHandler->expects($this->any())
             ->method('set')
             ->withConsecutive(
-                [
-                    $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED),
-                    $this->equalTo(false)
-                ],
                 [
                     $this->equalTo(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI),
                     $this->equalTo('https://redirect.uri')
@@ -358,6 +282,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $mockStateNonceHandler->method('generateState')->willReturn('mock-state-value');
         $mockServerConfig = $this->createMock(GoodIDServerConfig::class);
         $mockServerConfig->method('getAuthorizationEndpointUri')->willReturn('endpoint-uri');
+        $mockServerConfig->method('getIssuerUri')->willReturn('https://some-issuer');
 
         return new GoodIDRequestBuilderEndpoint(
             $request,

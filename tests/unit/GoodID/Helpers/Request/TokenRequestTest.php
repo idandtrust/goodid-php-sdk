@@ -326,28 +326,6 @@ class TokenRequestTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itRetrievesIdTokenWithoutAccessToken()
-    {
-        $response = $this->createMock(HttpResponse::class);
-        $response->method('getHttpStatusCode')
-            ->willReturn(200);
-        $response->method('getBodyJsonDecoded')
-            ->willReturn([
-                'id_token' => 'some-id-token',
-                'server_time' => 1499774246,
-            ]);
-
-        $request = $this->createRequest($response);
-        $request->execute();
-
-        $this->assertEquals('some-id-token', $request->getIdTokenJwe());
-        $this->assertEquals(1499774246, $request->getGoodIDServerTime());
-        $this->assertFalse($request->hasAccessToken());
-    }
-
-    /**
-     * @test
-     */
     public function itRetrievesIdTokenWithAccessToken()
     {
         $response = $this->createMock(HttpResponse::class);

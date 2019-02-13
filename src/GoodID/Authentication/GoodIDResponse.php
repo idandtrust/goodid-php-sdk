@@ -32,8 +32,11 @@ use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
 use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\Helpers\Response\Claims;
+use GoodID\Helpers\Response\LegacyClaimAdapter;
+use GoodID\Helpers\Response\ResponseValidator;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\ServiceLocator;
+use Jose\Object\JWKSet;
 
 /**
  * This class collects, validates and extracts the IDToken and Userinfo for the RP, using the authorization code
@@ -61,10 +64,14 @@ class GoodIDResponse
     private $errorDescription;
 
     /**
-     *
      * @var string
      */
     private $accessToken;
+
+    /**
+     * @var string|null
+     */
+    private $targetLinkUri;
 
     /**
      * GoodIDResponse constructor
@@ -110,6 +117,7 @@ class GoodIDResponse
     ) {
         $encryptionKeys = $this->checkAndUnifyEncryptionKeys($encryptionKeyOrKeys);
 
+        $stateNonceHandler = $serviceLocator->getStateNonceHandler();
         try {
             $goodIdServerConfig = $serviceLocator->getServerConfig();
             $sessionDataHandler = $serviceLocator->getSessionDataHandler();
@@ -123,8 +131,9 @@ class GoodIDResponse
                 throw new GoodIDException("Unexpected request method: $method!");
             }
 
-            $validator = $serviceLocator->getResponseValidator($clientId);
-            $validator->validateState($incomingRequest->getStringParameter('state'));
+            if (!$stateNonceHandler->validateState($incomingRequest->getStringParameter('state'))) {
+                throw new ValidationException("The received state is invalid.");
+            }
 
             $authCode = $incomingRequest->getStringParameter('code');
 
@@ -143,15 +152,11 @@ class GoodIDResponse
 
             // Session parameters
             $requestSource = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE);
-            $appInitiated = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_APP_INITIATED);
             $usedRedirectUri = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI);
+            // TODO: get targetLinkUri from session (optional)
 
             if (!$requestSource) {
                 throw new GoodIDException("Request source is not set in session!");
-            }
-
-            if (is_null($appInitiated)) {
-                throw new GoodIDException("App-initiated is not set in session!");
             }
 
             if (!$usedRedirectUri) {
@@ -165,9 +170,19 @@ class GoodIDResponse
                 $clientSecret,
                 $usedRedirectUri,
                 $authCode,
-                $appInitiated ? $requestSource : null
+                null
             );
             $tokenRequest->execute();
+
+            $rpKeySet = new JWKSet();
+            foreach ($encryptionKeys as $key) {
+                /* @var $key RSAPrivateKey */
+                $rpKeySet->addKey($key->asSpomkyKey(['use' => 'enc', 'alg' => 'RSA-OAEP'], true));
+            }
+
+            $jwe = $tokenRequest->getIdTokenJwe();
+
+            $tokenExtractor = $serviceLocator->getTokenExtractor($rpKeySet);
 
             $usedRequestObjectAsArray = $this->getRequestObjectAsArray($requestSource, $signingKey);
 
@@ -175,48 +190,51 @@ class GoodIDResponse
                 ? $usedRequestObjectAsArray['max_age']
                 : null;
 
-            list($goodEncryptionKey, $idTokenJws) = $this->decryptWithAny($encryptionKeys, $tokenRequest->getIdTokenJwe());
+            $authTimeRequested = isset($usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential'] === true;
+            $authTimeRequested |= isset($usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential'] === true;
 
-            $idToken = $validator->validateIdToken($idTokenJws, $clientSecret, $tokenRequest->getGoodIDServerTime(), $requestedMaxAge, $authCode, $tokenRequest->isTotpEnabled());
+            $idToken = $tokenExtractor->extractToken($jwe);
+            $idTokenVerifier = $serviceLocator->getIdTokenVerifier(
+                $clientId,
+                $requestedMaxAge,
+                $authTimeRequested,
+                $stateNonceHandler->getCurrentNonce()
+            );
+            $idTokenVerifier->verifyIdToken($idToken);
 
-            if ($tokenRequest->hasAccessToken()) {
-                $accessToken = $tokenRequest->getAccessToken();
+            $userinfoRequest = $requestFactory->createUserinfoRequest(
+                $goodIdServerConfig,
+                $tokenRequest->getAccessToken()
+            );
+            $userinfoRequest->execute();
 
-                // Userinfo request
-                $userinfoRequest = $requestFactory->createUserinfoRequest(
-                    $goodIdServerConfig,
-                    $accessToken
-                );
-                $userinfoRequest->execute();
+            $userinfo = $tokenExtractor->extractToken($userinfoRequest->getUserInfoJwe());
+            $userinfoVerifier = $serviceLocator->getUserinfoVerifier($idToken);
+            $userinfoVerifier->verifyUserinfo($userinfo);
 
-                $userinfoJws = $goodEncryptionKey->decryptCompactJwe($userinfoRequest->getUserinfoJwe());
-                $userinfo = $validator->validateUserInfo($userinfoJws);
-
-                // Validate tokens belong together
-                $validator->validateTokensBelongTogether($idToken, $userinfo);
-
-                // Matching response validation
-                if ($matchingResponseValidation) {
-                    if (!is_null($usedRequestObjectAsArray)
-                        && isset($usedRequestObjectAsArray["claims"])
-                        && is_array($usedRequestObjectAsArray["claims"])
-                    ) {
-                        $validator->validateMatchingResponse($usedRequestObjectAsArray["claims"], $userinfo);
-                    } else {
-                        throw new ValidationException("Matching response validation cannot succeed because the request object was probably encrypted, or nothing was requested.");
-                    }
+            // Matching response validation
+            if ($matchingResponseValidation) {
+                if (!is_null($usedRequestObjectAsArray)
+                    && isset($usedRequestObjectAsArray["claims"])
+                    && is_array($usedRequestObjectAsArray["claims"])
+                ) {
+                    /** @var $validator ResponseValidator */
+                    $validator = $serviceLocator->getResponseValidator();
+                    $validator->validateMatchingResponse($usedRequestObjectAsArray["claims"], $userinfo->getClaims());
+                } else {
+                    throw new ValidationException("Matching response validation cannot succeed because the request object was probably encrypted, or nothing was requested.");
                 }
-
-                $this->accessToken = $accessToken;
-                // Merge tokens
-                $this->data = $this->mergeTokens($idToken, $userinfo);
-            } else {
-                $this->accessToken = null;
-                $this->data = $this->mergeTokens($idToken, []);
             }
+
+            $this->accessToken = $tokenRequest->getAccessToken();
+            $claimAdapter = new LegacyClaimAdapter();
+
+            // Merge tokens
+            $this->data = $this->mergeTokens($claimAdapter->adaptIdToken($idToken->getClaims()), $claimAdapter->adaptUserInfo($userinfo->getClaims()));
 
             $this->claims = new Claims($this->data['claims']);
         } finally {
+            $stateNonceHandler->clear();
             $sessionDataHandler->removeAll();
         }
     }
@@ -245,31 +263,6 @@ class GoodIDResponse
     }
 
     /**
-     *
-     * @param array $encPrivKeys Encryption Private Keys
-     * @param string $jwe JWE
-     * @return string JWS
-     * @throws GoodIDException
-     */
-    private function decryptWithAny(array $encPrivKeys, $jwe)
-    {
-        $exceptionMessages = '';
-
-        foreach ($encPrivKeys as $encryptionKey) {
-            try {
-                return [
-                    $encryptionKey,
-                    $encryptionKey->decryptCompactJwe($jwe)
-                ];
-            } catch (GoodIDException $e) {
-                $exceptionMessages .= $e->getMessage() . ', ';
-            }
-        }
-
-        throw new GoodIDException('No key could decrypt: ' . $exceptionMessages);
-    }
-
-    /**
      * Get request object as array
      *
      * @param array|string $requestSource Request source
@@ -281,6 +274,7 @@ class GoodIDResponse
         if (is_array($requestSource)) {
             return $requestSource;
         } elseif (is_string($requestSource) && $requestSource !== OpenIDRequestSource::CONTENT_IS_ENCRYPTED) {
+            // FIXME: The request object on the request uri should be loaded into the session on request initiation, not here
             $downloadedRequestSource = (new OpenIDRequestURI($requestSource))->toArray($sigPubKey);
 
             if ($downloadedRequestSource !== OpenIDRequestSource::CONTENT_IS_ENCRYPTED) {
@@ -410,7 +404,7 @@ class GoodIDResponse
     /**
      * Get access token
      *
-     * @return access token
+     * @return string access token
      */
     public function getAccessToken()
     {
@@ -419,6 +413,16 @@ class GoodIDResponse
         }
 
         return $this->accessToken;
+    }
+
+    /**
+     * Get target link uri
+     *
+     * @return null|string
+     */
+    public function getTargetLinkUri()
+    {
+        return $this->targetLinkUri;
     }
 
     /**

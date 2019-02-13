@@ -2,6 +2,8 @@
 
 namespace GoodID\Helpers\Key;
 
+use Jose\Object\JWKInterface;
+
 class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -50,18 +52,6 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function itCanEncryptMessages()
-    {
-        $payload = 'payload to encrypt';
-        $key = new RSAPublicKey($this->publicKey);
-        $jwe = $key->encryptAsCompactJwe($payload);
-
-        $this->assertEquals($payload, (new RSAPrivateKey($this->privateKey))->decryptCompactJwe($jwe));
-    }
-
-    /**
-     * @test
-     */
     public function itCanGetThePublicKeyAsJwkArray()
     {
         $publicKey = new RSAPublicKey($this->publicKey);
@@ -75,6 +65,18 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
     {
         $publicKey = new RSAPublicKey($this->publicKey);
         $this->assertEquals('Fpa_c', $publicKey->getKid());
+    }
+
+    /**
+     * @test
+     */
+    public function itCanBeConvertedToSpomkyKey()
+    {
+        $publicKey = new RSAPublicKey($this->publicKey);
+        $spomkyKey = $publicKey->asSpomkyKey();
+
+        $this->assertInstanceOf(JWKInterface::class, $spomkyKey);
+        $this->assertEquals($publicKey->getPublicKeyAsJwkArray(), $spomkyKey->getAll());
     }
 
     private $publicKey = '

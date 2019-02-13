@@ -30,11 +30,11 @@ namespace GoodID\Helpers;
  */
 class Acr
 {
-    const LEVEL_1 = 1;
-    const LEVEL_2 = 2;
-    const LEVEL_3 = 3;
-    const LEVEL_4 = 4;
-    const LEVEL_DEFAULT = 1;
+    const LEVEL_1 = '1';
+    const LEVEL_2 = '2';
+    const LEVEL_3 = '3';
+    const LEVEL_4 = '4';
+    const LEVEL_DEFAULT = Acr::LEVEL_1;
 
     /**
      * Is valid?
@@ -45,6 +45,11 @@ class Acr
      */
     public static function isValid($value)
     {
-        return in_array($value, [1, 2, 3, 4]);
+        return in_array($value, [
+            Acr::LEVEL_1,
+            Acr::LEVEL_2,
+            Acr::LEVEL_3,
+            Acr::LEVEL_4,
+        ]);
     }
 }

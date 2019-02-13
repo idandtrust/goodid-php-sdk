@@ -12,28 +12,41 @@ The GoodID PHP SDK can be installed with [Composer](https://getcomposer.org/). A
 ```json
 {
     "require": {
-        "goodid/goodid-php-sdk": "~2.0"
+        "goodid/goodid-php-sdk": "~3.0"
     }
 }
 ```
 
 ## Prerequisites
 To provide GoodID login to your users, you need to first register at GoodID.
-You will receive GoodID mobile app beta access, GoodID mobile app download link, client id, client secret, default keypairs and suggested claim-set. At this point you also had the chance to generate your own keypairs and send the public key to GoodID.
+You will receive the followings:
+- GoodID mobile app download link
+- client id
+- client secret
+- default keypairs
+- suggested claimset
+
+At this point you also have the chance to generate your own keypairs and send the public key to GoodID.
+
+Download the GoodID app:
+
+[![Alt text](https://s3-us-west-2.amazonaws.com/goodid/developers/goodid-sdk-app-store.png)](https://itunes.apple.com/hu/app/goodid-strong-authentication/id1072149515?mt=8) [![Alt text](https://s3-us-west-2.amazonaws.com/goodid/developers/goodid-sdk-google-play.png)](https://play.google.com/store/apps/details?id=com.idandtrust.goodid)
 
 ## The GoodID login flow
 This is a short introduction to the GoodID login flow, to let you know what is the purpose of the endpoints that you will implement in the "Endpoints to be implemented" section.
 
 Brief overview of the GoodID login flow:
-1. When the user clicks on the "Login with GoodID" button, the GoodID Javascript SDK gets a new "OpenID Authentication Request" from your __GoodID Login Initiation Endpoint__ over AJAX.
-2. The GoodID Javascript SDK opens the GoodID login page with the received "Authorization Request", where the user logs in using their phone.
-3. The user is redirected to your __Redirect URI__ (Landing page), with "code" and "state" parameters that are used by the GoodID PHP SDK to collect, decrypt and verify the information provided by the user.
-4. Congratulations! You have all requested data about the user. You can perform the login or registration process (if it is the first time they log in with the given subject identifier).
+1. The Javascript SDK is only responsible to render the "Sign in with GoodID" button. [Read more](https://developers.goodid.net/?page=integration#collapse_2)
+2. When the user clicks on the "Sign in with GoodID" button the user agent is navigated to the your specified __GoodID Login Initiation Endpoint__ .
+3. The __GoodID Login Initiation Endpoint__ builds the "Authorization Request" and redirects to the GoodID Authorization EP with the request in the url.
+4. The user is redirected to your __Redirect URI__ (Landing page), with "code" and "state" parameters that are used by the GoodID PHP SDK to collect, decrypt and verify the information provided by the user.
+5. Congratulations! You have all requested data about the user. You can perform the login or registration process (if it is the first time they log in with the given subject identifier).
 
 ## Endpoints to be implemented
 
 ### GoodID Login Initiation Endpoint
-The so-called __GoodID Login Initiation endpoint__ is a designated endpoint for GoodID. It is analogous to the OpenID Connect Login Initiation endpoint. Currently it is responsible for the following things: It generates the OpenID authentication request and makes possible the GoodID App-Initiated Login Flow (Login from providers screen, etc.).
+The so-called __GoodID Login Initiation endpoint__ is a designated endpoint for GoodID. It is analogous to the OpenID Connect Login Initiation endpoint and it is responsible for to generate the OpenID authentication request.
+
 The endpoint should be a separate PHP file (e.g. goodid-endpoint.php) with content similar to the below code snippet.
 You don't have to handle GET/POST parameters, or write a response, this is all done automatically by the GoodID Endpoint that is instantiated in the code snippet.
 
@@ -149,33 +162,6 @@ if (filter_has_var(INPUT_GET, 'code') || filter_has_var(INPUT_GET, 'error')) {
 
     header('Location: /');
     exit;
-}
-```
-
-### Sending custom validation errors to GoodID
-When a certain data is judged valid by the GoodID app, but your custom validation thinks that it is invalid, you might want to notify us.
-With the information, we can make the validation better, or help you tune your claimset for better results.
-You can send error logs to us in the following way:
-
-```php
-use GoodID\Helpers\Logger\RemoteLogger;
-use GoodID\Helpers\Logger\Log;
-use GoodID\ServiceLocator;
-
-// Assume $response is a GoodIDResponseObject, as seen in "Redirect URI (Landing page)"
-// And assume you have validated phone_number and billto.phone_number and they both had some errors.
-try {
-    if($response->hasAccessToken()) {
-        $logger = new RemoteLogger(
-            $response->getAccessToken(),
-            (new ServiceLocator())->getServerConfig()
-        );
-        $logger->log("phone_number", "Data does not conform to ...", Log::LEVEL_ERROR);
-        $logger->log("billto.phone_number", "Data does not conform to ...", Log::LEVEL_ERROR);
-        $logger->send();
-    }
-} catch (GoodIDException $e) {
-    error_log('Remote logging failed: ' . $e->getMessage());
 }
 ```
 

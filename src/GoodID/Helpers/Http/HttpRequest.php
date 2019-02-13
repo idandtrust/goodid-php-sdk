@@ -43,6 +43,11 @@ class HttpRequest
     private $curlOpts;
 
     /**
+     * @var resource
+     */
+    private static $ch;
+
+    /**
      * HttpRequest constructor
      *
      * @param string $uri The target URI
@@ -139,12 +144,9 @@ class HttpRequest
      */
     private function curl(array $curlOpts)
     {
-        $ch = false;
         try {
-            $ch = curl_init();
-            if ($ch === false) {
-                throw new GoodIDException("curl_init failed");
-            }
+            $ch = $this->getConnection();
+
             $result = curl_setopt_array($ch, $curlOpts);
             if ($result === false) {
                 throw new GoodIDException("curl_setopt_array failed");
@@ -169,10 +171,36 @@ class HttpRequest
             } else {
                 return new HttpResponse($httpStatusCode, $result);
             }
-        } finally {
-            if ($ch !== false) {
-                curl_close($ch);
+        } catch (GoodIDException $ex) {
+            $this->closeConnection();
+            throw $ex;
+        }
+    }
+
+    /**
+     * @return resource
+     *
+     * @throws GoodIDException
+     */
+    private function getConnection()
+    {
+        if (!isset(self::$ch)) {
+            $ch = curl_init();
+            if ($ch === false) {
+                throw new GoodIDException("curl_init failed");
             }
+            self::$ch = $ch;
+        } else {
+            curl_reset(self::$ch);
+        }
+        return self::$ch;
+    }
+
+    private function closeConnection()
+    {
+        if (isset(self::$ch)) {
+            curl_close(self::$ch);
+            self::$ch = null;
         }
     }
 }

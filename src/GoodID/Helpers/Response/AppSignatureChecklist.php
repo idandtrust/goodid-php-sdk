@@ -22,30 +22,30 @@
  *
  */
 
-namespace GoodID\Helpers\Logger;
+namespace GoodID\Helpers\Response;
 
-/**
- * Log levels
- */
-class Log
+class AppSignatureChecklist
 {
-    const LEVEL_NOTICE = "notice";
-    const LEVEL_WARNING = "warning";
-    const LEVEL_ERROR = "error";
+    /**
+     * @var array
+     */
+    private $signedClaims = [];
 
     /**
-     * Is valid?
-     *
-     * @param mixed $value
-     *
-     * @return bool isValid
+     * @param string $claimName
      */
-    public static function isValidLogLevel($value)
+    public function markClaimSigned($claimName)
     {
-        return in_array($value, [
-            self::LEVEL_NOTICE,
-            self::LEVEL_WARNING,
-            self::LEVEL_ERROR
-        ]);
+        $this->signedClaims[$claimName] = true;
+    }
+
+    /**
+     * @param string $claimName
+     *
+     * @return bool
+     */
+    public function isClaimSigned($claimName)
+    {
+        return isset($this->signedClaims[$claimName]);
     }
 }
