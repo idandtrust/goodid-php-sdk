@@ -20,7 +20,7 @@ class TokenExtractorTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Unable to decode JWS
+     * @expectedExceptionMessage Unable to decode
      */
     public function itThrowsWhenJWSHeaderIsInvalid()
     {
@@ -29,6 +29,10 @@ class TokenExtractorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Previous Jose lib version will raise a fatal error when the protected header can not be decoded to an array;
+     * this is a Good Thing (tm), but unfortunately makes this test fail on php 5.6
+     *
+     * @requires PHP 7
      * @test
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage Unable to decode JWE
@@ -217,7 +221,7 @@ class TokenExtractorTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \InvalidArgumentException
-     * @expectedExceptionMessage Unable to decode JWS
+     * @expectedExceptionMessage Unable to decode
      */
     public function itThrowsWhenDecryptedJWSIsInvalid()
     {
