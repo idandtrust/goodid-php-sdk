@@ -55,10 +55,9 @@ class ResponseValidator
             }
         }
         if (isset($requestedClaims['userinfo'])) {
-            $userinfoClaims = isset($userinfo['claims']) ? $userinfo['claims'] : [];
             $this->validateMatchingResponseForToken(
                 $requestedClaims['userinfo'],
-                $userinfoClaims,
+                $userinfo,
                 $rules
             );
         }
