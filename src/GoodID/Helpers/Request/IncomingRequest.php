@@ -43,19 +43,26 @@ class IncomingRequest
 
     /**
      * Constructor
+     * 
+     * @param array|null $params
      */
-    public function __construct($stream = 'php://input')
+    public function __construct(array $params = null)
     {
-        $this->method = isset($_SERVER['REQUEST_METHOD'])
-            ? $_SERVER['REQUEST_METHOD']
-            : null;
+        $this->params = $params;
+        $this->method = 'GET';
 
-        if ($this->method === 'GET') {
-            $this->params = $_GET;
-        } elseif ($this->method === 'POST') {
-            $this->params = $_POST;
-        } else {
-            throw new GoodIDException("Unsupported request method.");
+        if (!isset($params)) {
+            $this->method = isset($_SERVER['REQUEST_METHOD'])
+                ? $_SERVER['REQUEST_METHOD']
+                : null;
+
+            if ($this->method === 'GET') {
+                $this->params = $_GET;
+            } elseif ($this->method === 'POST') {
+                $this->params = $_POST;
+            } else {
+                throw new GoodIDException("Unsupported request method.");
+            }
         }
     }
 

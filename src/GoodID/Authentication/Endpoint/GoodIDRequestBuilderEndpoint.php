@@ -133,12 +133,6 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
      */
     public function run()
     {
-        $requestUrl = $this->buildRequestUrl();
-
-        if ($this->incomingRequest->getMethod() === 'GET') {
-            header('Location: ' . $requestUrl);
-        } else {
-            throw new GoodIDException('Unsupported http request method: ' . $this->incomingRequest->getMethod());
-        }
+        header('Location: ' . $this->buildRequestUrl());
     }
 }

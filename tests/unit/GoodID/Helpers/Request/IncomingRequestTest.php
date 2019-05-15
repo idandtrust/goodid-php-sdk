@@ -38,20 +38,6 @@ class IncomingRequestTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Unsupported request method.
-     */
-    public function itThrowsExceptionForOtherMethods()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'not_get_nor_post';
-
-        $request = new IncomingRequest();
-
-        $this->assertInstanceOf(IncomingRequest::class, $request);
-    }
-
-    /**
-     * @test
      */
     public function itReturnsEmptyStringForNonExistentParams()
     {
