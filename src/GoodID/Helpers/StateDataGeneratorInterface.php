@@ -25,13 +25,12 @@
 namespace GoodID\Helpers;
 
 /**
- * This class contains the main configuration values corresponding to this version of the GoodID PHP SDK
+ * Interface StateDataGeneratorInterface
  */
-class Config
+interface StateDataGeneratorInterface
 {
     /**
-     * The version of this SDK
+     * @return string
      */
-    const GOODID_PHP_SDK_VERSION = "3.0.3";
-    const GOODID_PROFILE_VERSION = "1.0";
+    public function generate();
 }

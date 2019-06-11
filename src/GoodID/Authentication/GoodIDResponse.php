@@ -74,6 +74,11 @@ class GoodIDResponse
     private $targetLinkUri;
 
     /**
+     * @var string|null
+     */
+    private $stateData;
+
+    /**
      * GoodIDResponse constructor
      *
      * Collects and validates the user data corresponding to the given
@@ -122,6 +127,7 @@ class GoodIDResponse
             $goodIdServerConfig = $serviceLocator->getServerConfig();
             $sessionDataHandler = $serviceLocator->getSessionDataHandler();
             $requestFactory = $serviceLocator->getRequestFactory();
+            $this->stateData = $stateNonceHandler->getStateData();
 
             $incomingRequest = $incomingRequest ?: new IncomingRequest();
 
@@ -442,5 +448,13 @@ class GoodIDResponse
             : [];
 
         return $data;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getStateData()
+    {
+        return $this->stateData;
     }
 }

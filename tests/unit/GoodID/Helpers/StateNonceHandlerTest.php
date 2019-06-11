@@ -21,6 +21,24 @@ class StateNonceHandlerTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
+    public function itStoresStateDataInState()
+    {
+        $stateData = '12345678';
+        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
+        $stateDataGenerator = $this->createMock(StateDataGeneratorInterface::class);
+        $stateDataGenerator->expects($this->once())
+            ->method('generate')
+            ->willReturn($stateData);
+
+        $handler = new StateNonceHandler($sessionDataHandler);
+        $handler->setStateDataGenerator($stateDataGenerator);
+
+        $this->assertEquals(substr($handler->generateState(), 0, strlen($stateData)), $stateData);
+    }
+
+    /**
+     * @test
+     */
     public function itStoresNonceInSessionHandler()
     {
         $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);

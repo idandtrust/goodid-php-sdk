@@ -44,6 +44,11 @@ class StateNonceHandler
     private $sessionDataHandler;
 
     /**
+     * @var StateDataGeneratorInterface
+     */
+    private $stateDataGenerator;
+
+    /**
      * Construct
      *
      * @param SessionDataHandlerInterface $sessionDataHandler
@@ -60,10 +65,15 @@ class StateNonceHandler
      */
     public function generateState()
     {
-        $random = RandomStringGenerator::getPseudoRandomString(self::NORMAL_NONCE_LENGTH);
-        $this->sessionDataHandler->set(SessionDataHandlerInterface::SESSION_KEY_STATE, $random);
+        $state = RandomStringGenerator::getPseudoRandomString(self::NORMAL_NONCE_LENGTH);
 
-        return $random;
+        if ($this->stateDataGenerator) {
+            $state = $this->stateDataGenerator->generate() . '|' . $state;
+        }
+
+        $this->sessionDataHandler->set(SessionDataHandlerInterface::SESSION_KEY_STATE, $state);
+
+        return $state;
     }
 
     /**
@@ -138,5 +148,27 @@ class StateNonceHandler
     {
         $this->sessionDataHandler->remove(SessionDataHandlerInterface::SESSION_KEY_NONCE);
         $this->sessionDataHandler->remove(SessionDataHandlerInterface::SESSION_KEY_STATE);
+    }
+
+    /**
+     * @param StateDataGeneratorInterface $stateDataGenerator
+     */
+    public function setStateDataGenerator(StateDataGeneratorInterface $stateDataGenerator)
+    {
+        $this->stateDataGenerator = $stateDataGenerator;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getStateData()
+    {
+        $state = $this->getCurrentState();
+
+        if ($state && ($pos = strpos($state, '|')) !== false) {
+            return substr($state, 0, $pos);
+        }
+
+        return null;
     }
 }
