@@ -54,8 +54,9 @@ class IdTokenVerifier
      * @param null|int $requestedMaxAge
      * @param bool $authTimeRequested
      * @param null|string $nonce
+     * @param null|string $acr
      */
-    public function __construct($issuer, $clientId, $requestedMaxAge, $authTimeRequested, $nonce)
+    public function __construct($issuer, $clientId, $requestedMaxAge, $authTimeRequested, $nonce, $acr = null)
     {
         $timeToleranceInSeconds = 0;
 
@@ -72,11 +73,13 @@ class IdTokenVerifier
         // GoodID specific validation
         $appSignatureChecklist = new AppSignatureChecklist();
         $checker->addClaimChecker(new GoodIDAcrChecker());
-        $checker->addClaimChecker(new GoodIDEmailHashChecker());
+        if (!$acr || !in_array($acr, array('3', '4'))) {
+            $checker->addClaimChecker(new GoodIDEmailHashChecker());
+            $checker->addClaimChecker(new RequiredClaimChecker('email_hash'));
+        }
         $checker->addClaimChecker(new GoodIDAppSignatureChecker($appSignatureChecklist));
         $checker->addClaimChecker(new GoodIDAppUserChecker($appSignatureChecklist));
         $checker->addClaimChecker(new GoodIDAppSealChecker($appSignatureChecklist));
-        $checker->addClaimChecker(new RequiredClaimChecker('email_hash'));
         $checker->addClaimChecker(new RequiredClaimChecker('uih'));
 
         $this->checker = $checker;

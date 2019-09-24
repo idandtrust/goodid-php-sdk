@@ -49,7 +49,10 @@ class UserinfoVerifier
         $checker->addClaimChecker(new SubChecker($idToken->getClaim('sub')));
 
         // GoodID specific validation
-        $checker->addClaimChecker(new GoodIDVerifiedEmailChecker($idToken));
+        $acr = $idToken->hasClaim('acr') ? $idToken->getClaim('acr') : null;
+        if (!$acr || !in_array($acr, array('3', '4'))) {
+            $checker->addClaimChecker(new GoodIDVerifiedEmailChecker($idToken));
+        }
         $checker->addClaimChecker(new GoodIDUserinfoHashChecker($idToken));
 
         $this->checker = $checker;

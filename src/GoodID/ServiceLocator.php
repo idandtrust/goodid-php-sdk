@@ -24,7 +24,9 @@
 
 namespace GoodID;
 
+use GoodID\Authentication\ResponseHandler;
 use GoodID\Helpers\GoodIDServerConfig;
+use GoodID\Helpers\GoodidSessionStoreInterface;
 use GoodID\Helpers\Request\RequestFactory;
 use GoodID\Helpers\Response\IdTokenVerifier;
 use GoodID\Helpers\Response\ResponseValidator;
@@ -80,6 +82,16 @@ class ServiceLocator
      * @var TokenExtractor
      */
     private $tokenExtractor;
+
+    /**
+     * @var ResponseHandler|null
+     */
+    private $responseHandler;
+
+    /**
+     * @var GoodidSessionStoreInterface|null
+     */
+    private $goodidSessionStore;
 
     /**
      * @return GoodIDServerConfig
@@ -261,17 +273,19 @@ class ServiceLocator
      * @param null|int $requestedMaxAge
      * @param boolean $authTimeRequested
      * @param null|string $nonce
+     * $param null|string $acr
      *
      * @return IdTokenVerifier
      */
-    public function getIdTokenVerifier($clientId, $requestedMaxAge, $authTimeRequested, $nonce)
+    public function getIdTokenVerifier($clientId, $requestedMaxAge, $authTimeRequested, $nonce, $acr = null)
     {
         return new IdTokenVerifier(
             $this->getServerConfig()->getIssuerUri(),
             $clientId,
             $requestedMaxAge,
             $authTimeRequested,
-            $nonce
+            $nonce,
+            $acr
         );
     }
 
@@ -283,6 +297,36 @@ class ServiceLocator
     public function getUserinfoVerifier(JWSInterface $idToken)
     {
         return new UserinfoVerifier($idToken);
+    }
+
+    /**
+     * @param ResponseHandler $responseHandler
+     */
+    public function setResponseHandler(ResponseHandler $responseHandler)
+    {
+        $this->responseHandler = $responseHandler;
+    }
+
+    /**
+     * @return ResponseHandler|null
+     */
+    public function getResponseHandler()
+    {
+        return $this->responseHandler;
+    }
+
+    /**
+     * @param GoodidSessionStoreInterface $sessionStore
+     */
+    public function setGoodIDSessionStore(GoodidSessionStoreInterface $sessionStore) {
+        $this->goodidSessionStore = $sessionStore;
+    }
+
+    /**
+     * @return GoodidSessionStoreInterface|null
+     */
+    public function getGoodIDSessionStore() {
+        return $this->goodidSessionStore;
     }
 }
 

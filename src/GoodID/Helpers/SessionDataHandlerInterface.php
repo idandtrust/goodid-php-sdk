@@ -54,6 +54,8 @@ interface SessionDataHandlerInterface
      */
     const SESSION_KEY_REQUEST_SOURCE = "reqsource";
 
+    const SESSION_KEY_GOODID_SESSION_ID = "goodidsessionid";
+
     /**
      * Get a value from a persistent data store.
      *

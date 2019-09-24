@@ -26,6 +26,7 @@ namespace GoodID\Authentication\Endpoint;
 
 use GoodID\Exception\GoodIDException;
 use GoodID\Helpers\Config;
+use GoodID\Helpers\GoodidSession;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObject;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestObjectJWT;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
@@ -39,6 +40,13 @@ use GoodID\Helpers\UrlSafeBase64Encoder;
  */
 class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
 {
+    private $goodidSession;
+
+    public function bindGoodidSession(GoodidSession $session)
+    {
+        $this->goodidSession = $session;
+        return $this;
+    }
 
     /**
      * Builds the authentication request URI used at normal sign-ins
@@ -121,6 +129,14 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
                 $this->requestSource->toArray($this->signingKey));
         } else {
             throw new GoodIDException("Unsupported OpenIDRequestSource");
+        }
+
+        if ($this->goodidSession !== null) {
+            $queryParams['gsid'] = $this->goodidSession->getId();
+            $this->sessionDataHandler->set(
+                SessionDataHandlerInterface::SESSION_KEY_GOODID_SESSION_ID,
+                $this->goodidSession->getId()
+            );
         }
 
         return $this->goodIdServerConfig->getAuthorizationEndpointUri() . '?' . http_build_query($queryParams);

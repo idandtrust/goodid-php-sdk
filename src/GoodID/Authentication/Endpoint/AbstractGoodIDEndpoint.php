@@ -26,6 +26,7 @@ namespace GoodID\Authentication\Endpoint;
 
 use GoodID\Exception\GoodIDException;
 use GoodID\Helpers\GoodIDServerConfig;
+use GoodID\Helpers\GoodidSessionStoreInterface;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
@@ -94,6 +95,11 @@ abstract class AbstractGoodIDEndpoint
     protected $stateNonceHandler;
 
     /**
+     * @var GoodidSessionStoreInterface
+     */
+    protected $goodidSessionProvider;
+
+    /**
      * For comments see GoodIDEndpointFactory
      *
      * @param IncomingRequest $incomingRequest
@@ -140,6 +146,15 @@ abstract class AbstractGoodIDEndpoint
         $this->goodIdServerConfig = $goodIdServerConfig;
         $this->sessionDataHandler = $sessionDataHandler;
         $this->stateNonceHandler = $stateNonceHandler;
+    }
+
+    public function setGoodidSessionProvider(GoodidSessionStoreInterface $goodidSessionProvider) {
+        $this->goodidSessionProvider = $goodidSessionProvider;
+    }
+
+    public function getGoodidSessionProvider()
+    {
+        return $this->goodidSessionProvider;
     }
 
     /**

@@ -180,8 +180,23 @@ class OpenIDRequestObject implements OpenIDRequestSource
                 (int) $claims['id_token']['acr']['value'],
                 (int) $acr
             ]);
+        } elseif (isset($claims['id_token']['acr']['values'])) {
+            $maxAcrValue = 0;
+            $acrValues = array_map(function ($acr) use (&$maxAcrValue) {
+                $acrValue = (int)$acr;
+                if ($acrValue > $maxAcrValue) {
+                    $maxAcrValue = $acrValue;
+                }
+                return $acrValue;
+            }, $claims['id_token']['acr']['values']);
+            if ($acr > $maxAcrValue) {
+                array_push($acrValues, $acr);
+            }
+            $claims['id_token']['acr']['values'] = array_map(function ($acrValue) {
+                return (string) $acrValue;
+            }, $acrValues);
         } else {
-            $claims['id_token']['acr']['value'] = $acr;
+            $claims['id_token']['acr']['value'] = (string) $acr;
         }
 
         return $claims;

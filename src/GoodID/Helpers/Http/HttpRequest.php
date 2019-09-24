@@ -133,6 +133,54 @@ class HttpRequest
         return $this->curl($this->curlOpts);
     }
 
+    public function postJson($data)
+    {
+        $jsonData = json_encode($data);
+
+        $assocHeaders = [];
+        $curlHeaders = array_key_exists(CURLOPT_HTTPHEADER, $this->curlOpts) ? $this->curlOpts[CURLOPT_HTTPHEADER] : [];
+        foreach ($curlHeaders as $curlHeader) {
+            $assocHeader = explode(': ', $curlHeader, 2);
+            $assocHeaders[$assocHeader[0]] = $assocHeader[1];
+        }
+        $assocHeaders = array_merge([
+                'Content-Type' => 'application/json',
+                'Content-Length' => strlen($jsonData),
+            ],
+            $assocHeaders
+        );
+
+        $this->setHeaders($assocHeaders);
+        $this->curlOpts[CURLOPT_POST] = true;
+        $this->curlOpts[CURLOPT_POSTFIELDS] = $jsonData;
+
+        return $this->curl($this->curlOpts);
+    }
+
+    public function putJson($data)
+    {
+        $jsonData = json_encode($data);
+
+        $assocHeaders = [];
+        $curlHeaders = array_key_exists(CURLOPT_HTTPHEADER, $this->curlOpts) ? $this->curlOpts[CURLOPT_HTTPHEADER] : [];
+        foreach ($curlHeaders as $curlHeader) {
+            $assocHeader = explode(': ', $curlHeader, 2);
+            $assocHeaders[$assocHeader[0]] = $assocHeader[1];
+        }
+        $assocHeaders = array_merge([
+            'Content-Type' => 'application/json',
+            'Content-Length' => strlen($jsonData),
+        ],
+            $assocHeaders
+        );
+
+        $this->setHeaders($assocHeaders);
+        $this->curlOpts[CURLOPT_CUSTOMREQUEST] = 'PUT';
+        $this->curlOpts[CURLOPT_POSTFIELDS] = $jsonData;
+
+        return $this->curl($this->curlOpts);
+    }
+
     /**
      * Calls curl with the given parameters and returns the response as a HttpResponse
      *

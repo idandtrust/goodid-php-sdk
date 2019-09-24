@@ -123,6 +123,8 @@ class GoodIDResponse
         $encryptionKeys = $this->checkAndUnifyEncryptionKeys($encryptionKeyOrKeys);
 
         $stateNonceHandler = $serviceLocator->getStateNonceHandler();
+        $goodidSession = null;
+
         try {
             $goodIdServerConfig = $serviceLocator->getServerConfig();
             $sessionDataHandler = $serviceLocator->getSessionDataHandler();
@@ -159,6 +161,14 @@ class GoodIDResponse
             // Session parameters
             $requestSource = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE);
             $usedRedirectUri = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI);
+            $goodidSessionId = $sessionDataHandler->get(SessionDataHandlerInterface::SESSION_KEY_GOODID_SESSION_ID);
+            if ($goodidSessionId !== null) {
+                $sessionStore = $serviceLocator->getGoodIDSessionStore();
+                if ($sessionStore === null) {
+                    throw new \LogicException('To use kyc/mobilecommunication features, you must provide a GoodidSessionStore');
+                }
+                $goodidSession = $serviceLocator->getGoodIDSessionStore()->loadGoodidSession($goodidSessionId);
+            }
             // TODO: get targetLinkUri from session (optional)
 
             if (!$requestSource) {
@@ -204,7 +214,8 @@ class GoodIDResponse
                 $clientId,
                 $requestedMaxAge,
                 $authTimeRequested,
-                $stateNonceHandler->getCurrentNonce()
+                $stateNonceHandler->getCurrentNonce(),
+                $idToken->hasClaim('acr') ? $idToken->getClaim('acr') : null
             );
             $idTokenVerifier->verifyIdToken($idToken);
 
@@ -220,15 +231,14 @@ class GoodIDResponse
 
             // Matching response validation
             if ($matchingResponseValidation) {
-                if (!is_null($usedRequestObjectAsArray)
-                    && isset($usedRequestObjectAsArray["claims"])
-                    && is_array($usedRequestObjectAsArray["claims"])
-                ) {
+                if (is_null($usedRequestObjectAsArray)) {
+                    throw new ValidationException("Matching response validation cannot succeed because the request object was probably encrypted.");
+                }
+
+                if (isset($usedRequestObjectAsArray["claims"]) && is_array($usedRequestObjectAsArray["claims"])) {
                     /** @var $validator ResponseValidator */
                     $validator = $serviceLocator->getResponseValidator();
                     $validator->validateMatchingResponse($usedRequestObjectAsArray["claims"], $userinfo->getClaims());
-                } else {
-                    throw new ValidationException("Matching response validation cannot succeed because the request object was probably encrypted, or nothing was requested.");
                 }
             }
 
@@ -239,9 +249,17 @@ class GoodIDResponse
             $this->data = $this->mergeTokens($claimAdapter->adaptIdToken($idToken->getClaims()), $claimAdapter->adaptUserInfo($userinfo->getClaims()));
 
             $this->claims = new Claims($this->data['claims']);
+
+            $responseHandler = $serviceLocator->getResponseHandler();
+            if ($responseHandler !== null) {
+                $responseHandler->handleResponse($goodidSession, $idToken->toCompactJSON(0), $userinfo->getClaims());
+            }
         } finally {
             $stateNonceHandler->clear();
             $sessionDataHandler->removeAll();
+            if ($goodidSession !== null) {
+                $serviceLocator->getGoodIDSessionStore()->clearGoodidSession($goodidSession->getId());
+            }
         }
     }
 
