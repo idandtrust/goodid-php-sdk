@@ -26,6 +26,7 @@ namespace GoodID\Authentication;
 
 use GoodID\Exception\GoodIDException;
 use GoodID\Exception\ValidationException;
+use GoodID\Helpers\GoodidSession;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\Key\RSAPublicKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
@@ -37,6 +38,7 @@ use GoodID\Helpers\Response\ResponseValidator;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\ServiceLocator;
 use Jose\Object\JWKSet;
+use Jose\Object\JWSInterface;
 
 /**
  * This class collects, validates and extracts the IDToken and Userinfo for the RP, using the authorization code
@@ -77,6 +79,21 @@ class GoodIDResponse
      * @var string|null
      */
     private $stateData;
+
+    /**
+     * @var GoodidSession|null
+     */
+    private $goodIdSession;
+
+    /**
+     * @var JWSInterface
+     */
+    private $userinfo;
+
+    /**
+     * @var JWSInterface
+     */
+    private $idToken;
 
     /**
      * GoodIDResponse constructor
@@ -250,10 +267,9 @@ class GoodIDResponse
 
             $this->claims = new Claims($this->data['claims']);
 
-            $responseHandler = $serviceLocator->getResponseHandler();
-            if ($responseHandler !== null) {
-                $responseHandler->handleResponse($goodidSession, $idToken->toCompactJSON(0), $userinfo->getClaims());
-            }
+            $this->idToken = $idToken;
+            $this->userinfo = $userinfo;
+            $this->goodIdSession = $goodidSession;
         } finally {
             $stateNonceHandler->clear();
             $sessionDataHandler->removeAll();
@@ -474,5 +490,37 @@ class GoodIDResponse
     public function getStateData()
     {
         return $this->stateData;
+    }
+
+    /**
+     * @return GoodidSession|null
+     */
+    public function getGoodIDSession()
+    {
+        return $this->goodIdSession;
+    }
+
+    /**
+     * @return string
+     */
+    public function getIdTokenJWS()
+    {
+        return $this->idToken->toCompactJSON(0);
+    }
+
+    /**
+     * @return array
+     */
+    public function getIdTokenClaims()
+    {
+        return $this->idToken->getClaims();
+    }
+
+    /**
+     * @return array
+     */
+    public function getUserinfoClaims()
+    {
+        return $this->userinfo->getClaims();
     }
 }

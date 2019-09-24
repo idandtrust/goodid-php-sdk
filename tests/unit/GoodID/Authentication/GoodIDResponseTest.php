@@ -518,59 +518,6 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @test
-     */
-    public function itCallsResponseHandlerWhenSet()
-    {
-        $request = new MockIncomingRequest(['code' => 'some-auth-code']);
-        $sessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
-        $sessionDataHandler->expects($this->atLeastOnce())
-            ->method('get')
-            ->willReturnMap([
-                [SessionDataHandlerInterface::SESSION_KEY_USED_REDIRECT_URI, 'http://redirect.uri'],
-                [SessionDataHandlerInterface::SESSION_KEY_REQUEST_SOURCE, ['iss' => 'client1']],
-            ]);
-        $tokenRequest = $this->createMock(TokenRequest::class);
-        $userinfoRequest = $this->createMock(UserinfoRequest::class);
-        $requestFactory = $this->createMock(RequestFactory::class);
-        $requestFactory->method('createTokenRequest')
-            ->willReturn($tokenRequest);
-        $requestFactory->method('createUserinfoRequest')
-            ->willReturn($userinfoRequest);
-        $validator = $this->createMock(ResponseValidator::class);
-
-        $idToken = JWSFactory::createJWS(['sub' => 'some subject', 'foo' => 'bar']);
-        $idToken = $idToken->addSignatureInformation(
-            new JWK(['kty' => 'none']),
-            [
-                'alg' => 'HS512'
-            ]
-        );
-        $userinfo = JWSFactory::createJWS(['sub' => 'some subject', 'bar' => 'baz']);
-        $tokenExtractor = $this->createMock(TokenExtractor::class);
-        $tokenExtractor->method('extractToken')
-            ->willReturnOnConsecutiveCalls($idToken, $userinfo);
-
-        $responseHandler = $this->createMock(ResponseHandler::class);
-        $responseHandler->expects($this->once())
-            ->method('handleResponse')
-            ->with(
-                null,
-                'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJzb21lIHN1YmplY3QiLCJmb28iOiJiYXIifQ.',
-                ['sub' => 'some subject', 'bar' => 'baz']
-            );
-
-        $goodIdResponse = $this->createGoodIDResponse([
-            'incomingRequest' => $request,
-            'sessionDataHandler' => $sessionDataHandler,
-            'requestFactory' => $requestFactory,
-            'responseValidator' => $validator,
-            'tokenExtractor' => $tokenExtractor,
-            'responseHandler' => $responseHandler,
-        ]);
-    }
-
-    /**
      *
      * @param array $params
      * @return GoodIDResponse
@@ -594,8 +541,6 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
             ->willReturn(isset($params['responseValidator']) ? $params['responseValidator'] : $this->createMock(ResponseValidator::class));
         $serviceLocator->method('getRequestFactory')
             ->willReturn(isset($params['requestFactory']) ? $params['requestFactory'] : $this->createMock(RequestFactory::class));
-        $serviceLocator->method('getResponseHandler')
-            ->willReturn(isset($params['responseHandler']) ? $params['responseHandler'] : null);
         if (isset($params['tokenExtractor'])) {
             $tokenExtractor = $params['tokenExtractor'];
         } else {

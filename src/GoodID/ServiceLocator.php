@@ -24,7 +24,6 @@
 
 namespace GoodID;
 
-use GoodID\Authentication\ResponseHandler;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\GoodidSessionStoreInterface;
 use GoodID\Helpers\Request\RequestFactory;
@@ -82,11 +81,6 @@ class ServiceLocator
      * @var TokenExtractor
      */
     private $tokenExtractor;
-
-    /**
-     * @var ResponseHandler|null
-     */
-    private $responseHandler;
 
     /**
      * @var GoodidSessionStoreInterface|null
@@ -297,22 +291,6 @@ class ServiceLocator
     public function getUserinfoVerifier(JWSInterface $idToken)
     {
         return new UserinfoVerifier($idToken);
-    }
-
-    /**
-     * @param ResponseHandler $responseHandler
-     */
-    public function setResponseHandler(ResponseHandler $responseHandler)
-    {
-        $this->responseHandler = $responseHandler;
-    }
-
-    /**
-     * @return ResponseHandler|null
-     */
-    public function getResponseHandler()
-    {
-        return $this->responseHandler;
     }
 
     /**
