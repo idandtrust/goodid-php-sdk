@@ -181,6 +181,13 @@ class HttpRequest
         return $this->curl($this->curlOpts);
     }
 
+    public function delete()
+    {
+        $this->curlOpts[CURLOPT_CUSTOMREQUEST] = 'DELETE';
+
+        return $this->curl($this->curlOpts);
+    }
+
     /**
      * Calls curl with the given parameters and returns the response as a HttpResponse
      *
