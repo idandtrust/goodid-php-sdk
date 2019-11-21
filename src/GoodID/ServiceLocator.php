@@ -264,33 +264,34 @@ class ServiceLocator
 
     /**
      * @param string $clientId
+     * @param string $securityLevel
      * @param null|int $requestedMaxAge
      * @param boolean $authTimeRequested
      * @param null|string $nonce
-     * $param null|string $acr
      *
      * @return IdTokenVerifier
      */
-    public function getIdTokenVerifier($clientId, $requestedMaxAge, $authTimeRequested, $nonce, $acr = null)
+    public function getIdTokenVerifier($clientId, $securityLevel, $requestedMaxAge, $authTimeRequested, $nonce)
     {
         return new IdTokenVerifier(
             $this->getServerConfig()->getIssuerUri(),
             $clientId,
+            $securityLevel,
             $requestedMaxAge,
             $authTimeRequested,
-            $nonce,
-            $acr
+            $nonce
         );
     }
 
     /**
+     * @param string $securityLevel
      * @param JWSInterface $idToken
      *
      * @return UserinfoVerifier
      */
-    public function getUserinfoVerifier(JWSInterface $idToken)
+    public function getUserinfoVerifier($securityLevel, JWSInterface $idToken)
     {
-        return new UserinfoVerifier($idToken);
+        return new UserinfoVerifier($securityLevel, $idToken);
     }
 
     /**

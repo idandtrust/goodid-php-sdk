@@ -6,6 +6,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanBeCreatedFromPem()
     {
@@ -20,11 +21,12 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsWhenProvidedWithPublicKey()
     {
-        $key = new RSAPrivateKey($this->publicKey);
+        new RSAPrivateKey($this->publicKey);
     }
 
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanSignPayload()
     {
@@ -35,6 +37,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanGetThePublicKeyAsJwkArray()
     {
@@ -44,6 +47,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanGetTheKeyId()
     {
@@ -97,7 +101,5 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
         'e' => 'AQAB'
     ];
 
-    private $jws = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJodHRwczpcL1wvand0LWlkcC5leGFtcGxlLmNvbSJ9.LvuKqTh96j4cMXNylHLfefanvimjbW1JOwgupXN3ej5AaZdliGJeIdyZBNZ2eEDeCo7qqzUcgny6dVP9-2vJ9_LSqiCeT2_ikAQtOtA0AeHlX6zkJkl0sxTewEa46YdEPTocn_YKsTs4MO9xOwT7tB5dLfhPur2_Dtc4IJ2e3WuWLN6hpNFtZef4SAZmW5C9P_s4_e3zRReoirCBfmJnaLNKJOCAL6ODNoUYn8d5F7W83VDmx_MatqtQFTZdMpHhZuHMqQv39BQH1Gx2akM5jXQYoW_sOtTsvXBLuzdb5k9f7dYvKJWzjJVehebS4ILiCYe-P00K8AD0IqgT-wf4Mw';
-    private $jwe = 'eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZDQkMtSFM1MTIiLCJ6aXAiOiJERUYifQ.o7srqwh27F-yEPwPfETE_75mJ2qVfmVPqz9kyPSShN9zOZMOOfCkK654tEFx9B9uqQbXvk-HS6CqGsVVbcgwqAKEztw5XKC-UzUnSmzTljcxDYllSW5UcovGa8TmBCPJ540IQY0hxYPs1Neyb1DEO_RVg6sPgt152pMGoeHig9k-9gENiH87BfhAhp7_ZQUWAgkwT06b4i8wlf320uMEulRseuAxSTDg80w0z7PAFlniGgfYAZdlbrLGraj7E-Y0rqGo-2mswpxIsFefgBOY2r43yEcgW98AexmR03Kx95CDjnVnDYa34dYUGp3siqdKSp23NEukvtCjlDPhujsV4g.lIn5EucmygjO6eyLBYFSnQ.gZx2Pf30FsGSQPfbHTR0sj8EvY5Yx6ChePrE-8WEEck.zouxUX_DmS2vfS0UpZCWH6i6FdxvMIEkfKwJgH_CViM';
-    private $jweEncryptedWithDifferentKey = 'eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZDQkMtSFM1MTIiLCJ6aXAiOiJERUYifQ.BP9ziOuYjVkqHmehXaMVVnQSnfUu4au2c61WQVRq0n00dZEwCfVYvo14EilBv4p7lZ6LI8EVKNz9Ctf9t_uaWiG0PWhmXSFRIVvLHtIS4OFxYLzQUBNcLorPezX0J6kOm1t2U6Y5lyQYwLxIKTt1gH7LdsMPlaR-2vjq9TKqoGU_F9JTlHwyOjIRBfdsSpX7ZoXFrvmQSm80FUrQpF1RWz05pVyPSXQ1k6lL7v6ivHGPV3geULkQ4XDOdn4WfF306DOb0U39jMBhSW5Vc0sIN0wPkNKLpTS9aqE1gyhSp-AVqVvyeo76H-otitt495sf7SREA2RthZ7aQ227aGaFUw.IlKT4-KbfGWIT3YnYLKbRA.kPmUGBEpQ6TUZMHdr8J46U2uo00HCpRxLlZZc7rjAUY.WuV4bu8i3nIAbwDle5tPDww7_H0TLgfmFZc_WW0F4Ns';
+    private $jws = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJodHRwczovL2p3dC1pZHAuZXhhbXBsZS5jb20ifQ.bF9Et2YNPBYk8BtqI1RaEWX6dXtkbhZX0EOMW1Nd3JecOPh3Py8FevXuOHMP0v4BQYfRCAVM2V9VGXCojvfahpkul2kgGrZNql6fsQaWf0bYPkyBBZekl9zvpgSu_qA4u2WMTBQLZy2q6oU-Ke7uIDofrct0CcxN5YTwHT_QL5RgYJAyiPUDOWmYyZZpU_9vQ9SGDCNQ-YYCAk-griJaM3NThXrRepP15GbnAsi5NCiIaWoxDfAVjYji0r6yeoewtBLH1g3vwCo7Zv7760746I-eDSQ4IefXIoo191Fmxu_g17b-S_E__mPCM--6eE4bu4yAqT6W8GacwGdzePMibg';
 }

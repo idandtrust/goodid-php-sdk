@@ -12,7 +12,7 @@ The GoodID PHP SDK can be installed with [Composer](https://getcomposer.org/). A
 ```json
 {
     "require": {
-        "goodid/goodid-php-sdk": "~3.0"
+        "goodid/goodid-php-sdk": "~4.0"
     }
 }
 ```
@@ -104,6 +104,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 use GoodID\Authentication\GoodIDResponse;
 use GoodID\Exception\GoodIDException;
 use GoodID\Helpers\Key\RSAPrivateKey;
+use GoodID\Helpers\SecurityLevel;
 use GoodID\ServiceLocator;
 
 // -- Option 1 --
@@ -127,6 +128,7 @@ if (filter_has_var(INPUT_GET, 'code') || filter_has_var(INPUT_GET, 'error')) {
             $serviceLocator,
             "YOUR-CLIENT-ID",
             "YOUR-CLIENT-SECRET",
+            SecurityLevel::NORMAL, // or SecurityLevel::HIGH
             new RSAPrivateKey("YOUR-SIG-PRIV-KEY-PEM-STRING"),
             new RSAPrivateKey("YOUR-ENC-PRIV-KEY-PEM-STRING")
         );

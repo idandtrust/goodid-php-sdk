@@ -2,7 +2,6 @@
 
 namespace GoodID\Helpers\OpenIDRequestSource;
 
-use GoodID\Helpers\Acr;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\Key\RSAPublicKey;
@@ -11,9 +10,11 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanBeCreatedFromArray()
     {
+        /* @var RSAPublicKey|\PHPUnit_Framework_MockObject_MockObject $mockKey */
         $mockKey = $this->createMock(RSAPublicKey::class);
         $claims = [
             'sub' => 'some-subject-id',
@@ -27,9 +28,11 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanBeCreatedFromJson()
     {
+        /* @var RSAPublicKey|\PHPUnit_Framework_MockObject_MockObject $mockKey */
         $mockKey = $this->createMock(RSAPublicKey::class);
         $claims = '{"sub": "some-subject-id", "name": "John Doe"}';
         $request = new OpenIDRequestObject($claims);
@@ -46,11 +49,13 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itCanBeTurnedIntoAnArray()
     {
         $request = new OpenIDRequestObject([]);
 
+        /* @var GoodIDServerConfig|\PHPUnit_Framework_MockObject_MockObject $serverConfig */
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getAudienceUri')
             ->willReturn('https://server.audience.uri');
@@ -63,13 +68,7 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
                 'client_id' => 'a-client-id',
                 'redirect_uri' => 'https://a.redirect.url',
                 'scope' => 'openid',
-                'claims' => [
-                    'id_token' => [
-                        'acr' => [
-                            'value' => Acr::LEVEL_1
-                        ]
-                    ]
-                ]
+                'claims' => [],
             ],
             $request->toArray('a-client-id', 'https://a.redirect.url', $serverConfig)
         );
@@ -77,11 +76,13 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itPreservesRequestedMaxAge()
     {
         $request = new OpenIDRequestObject([]);
 
+        /* @var GoodIDServerConfig|\PHPUnit_Framework_MockObject_MockObject $serverConfig */
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getAudienceUri')
             ->willReturn('https://server.audience.uri');
@@ -95,15 +96,9 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
                 'redirect_uri' => 'https://a.redirect.url',
                 'scope' => 'openid',
                 'max_age' => 3600,
-                'claims' => [
-                    'id_token' => [
-                        'acr' => [
-                            'value' => Acr::LEVEL_1
-                        ]
-                    ]
-                ]
+                'claims' => []
             ],
-            $request->toArray('a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_1, 3600)
+            $request->toArray('a-client-id', 'https://a.redirect.url', $serverConfig, 3600)
         );
     }
 
@@ -111,16 +106,18 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
      * @test
      * @expectedException \InvalidArgumentException
      * @expectedExceptionMessage max_age can not be negative
+     * @throws \GoodID\Exception\GoodIDException
      */
     public function itThrowsWhenNegativeMaxAgeRequested()
     {
         $request = new OpenIDRequestObject([]);
 
+        /* @var GoodIDServerConfig|\PHPUnit_Framework_MockObject_MockObject $serverConfig */
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getAudienceUri')
             ->willReturn('https://server.audience.uri');
 
-        $request->toArray('a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_1, -3600);
+        $request->toArray('a-client-id', 'https://a.redirect.url', $serverConfig, -3600);
     }
 
     /**
@@ -145,40 +142,33 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Invalid ACR: -1
+     * @throws \GoodID\Exception\GoodIDException
      */
-    public function itFailsWhenAcrIsInvalid()
+    public function itGeneratesJwt()
     {
         $request = new OpenIDRequestObject([
-            'sub' => 'some-subject-id',
-            'name' => 'John Doe',
-        ]);
-        $signingKey = new RSAPrivateKey($this->privateKey);
-        $invalidAcr = -1;
-        $serverConfig = $this->createMock(GoodIDServerConfig::class);
-
-        $request->generateJwt($signingKey, null, null, $serverConfig, $invalidAcr);
-    }
-
-    /**
-     * @test
-     */
-    public function itGeneratesJwtWhenAcrIsNotInClaims()
-    {
-        $request = new OpenIDRequestObject([
-            'id_token' => [],
+            'id_token' => [
+                'auth_time' => [
+                    'essential' => true,
+                ]
+            ],
             'userinfo' => [
-                'sub' => 'some-subject-id',
-                'name' => 'John Doe',
+                'name' => [
+                    'essential' => true,
+                    'value' => 'John Doe',
+                ],
+                'email' => [
+                    'essential' => true,
+                ]
             ]
         ]);
         $signingKey = new RSAPrivateKey($this->privateKey);
+        /* @var GoodIDServerConfig|\PHPUnit_Framework_MockObject_MockObject $serverConfig */
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getAudienceUri')
             ->willReturn('https://server.audience.uri');
 
-        $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_1);
+        $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig);
         $this->assertEquals($this->jwt, $jwt);
 
         $pubKey = new RSAPublicKey($this->publicKey);
@@ -193,113 +183,18 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
                 'scope' => 'openid',
                 'claims' => [
                     'id_token' => [
-                        'acr' => [
-                            'value' => Acr::LEVEL_1
-                        ]
+                        'auth_time' => [
+                            'essential' => true,
+                        ],
                     ],
                     'userinfo' => [
-                        'sub' => 'some-subject-id',
-                        'name' => 'John Doe',
-                    ]
-                ],
-            ],
-            $payload
-        );
-    }
-
-    /**
-     * @test
-     */
-    public function itGeneratesJwtWhenAcrIsInClaims1()
-    {
-        $request = new OpenIDRequestObject([
-            'id_token' => [
-                'acr' => [
-                    'value' => Acr::LEVEL_1
-                ]
-            ],
-            'userinfo' => [
-                'sub' => 'some-subject-id',
-                'name' => 'John Doe',
-            ]
-        ]);
-        $signingKey = new RSAPrivateKey($this->privateKey);
-        $serverConfig = $this->createMock(GoodIDServerConfig::class);
-        $serverConfig->method('getAudienceUri')
-            ->willReturn('https://server.audience.uri');
-
-        $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_2);
-        $this->assertEquals($this->jwtWithAcr2, $jwt);
-
-        $pubKey = new RSAPublicKey($this->publicKey);
-        $payload = $pubKey->verifyCompactJws($jwt);
-        $this->assertEquals(
-            [
-                'iss' => 'a-client-id',
-                'aud' => 'https://server.audience.uri',
-                'response_type' => 'code',
-                'client_id' => 'a-client-id',
-                'redirect_uri' => 'https://a.redirect.url',
-                'scope' => 'openid',
-                'claims' => [
-                    'id_token' => [
-                        'acr' => [
-                            'value' => Acr::LEVEL_2
+                        'name' => [
+                            'essential' => true,
+                            'value' => 'John Doe',
+                        ],
+                        'email' => [
+                            'essential' => true,
                         ]
-                    ],
-                    'userinfo' => [
-                        'sub' => 'some-subject-id',
-                        'name' => 'John Doe',
-                    ]
-                ],
-            ],
-            $payload
-        );
-    }
-
-    /**
-     * @test
-     */
-    public function itGeneratesJwtWhenAcrIsInClaims2()
-    {
-        $request = new OpenIDRequestObject([
-            'id_token' => [
-                'acr' => [
-                    'value' => Acr::LEVEL_2
-                ]
-            ],
-            'userinfo' => [
-                'sub' => 'some-subject-id',
-                'name' => 'John Doe',
-            ]
-        ]);
-        $signingKey = new RSAPrivateKey($this->privateKey);
-        $serverConfig = $this->createMock(GoodIDServerConfig::class);
-        $serverConfig->method('getAudienceUri')
-            ->willReturn('https://server.audience.uri');
-
-        $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig, Acr::LEVEL_1);
-        $this->assertEquals($this->jwtWithAcr2, $jwt);
-
-        $pubKey = new RSAPublicKey($this->publicKey);
-        $payload = $pubKey->verifyCompactJws($jwt);
-        $this->assertEquals(
-            [
-                'iss' => 'a-client-id',
-                'aud' => 'https://server.audience.uri',
-                'response_type' => 'code',
-                'client_id' => 'a-client-id',
-                'redirect_uri' => 'https://a.redirect.url',
-                'scope' => 'openid',
-                'claims' => [
-                    'id_token' => [
-                        'acr' => [
-                            'value' => Acr::LEVEL_2
-                        ]
-                    ],
-                    'userinfo' => [
-                        'sub' => 'some-subject-id',
-                        'name' => 'John Doe',
                     ]
                 ],
             ],
@@ -347,6 +242,5 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
 4HynUkRp/eyNXxA8kK0LOAxiUJyQAj1MjNcO3TWH4gO/w1kTbTNRjdQ=
 -----END RSA PRIVATE KEY-----';
 
-    private $jwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOlwvXC9zZXJ2ZXIuYXVkaWVuY2UudXJpIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbGllbnRfaWQiOiJhLWNsaWVudC1pZCIsInJlZGlyZWN0X3VyaSI6Imh0dHBzOlwvXC9hLnJlZGlyZWN0LnVybCIsInNjb3BlIjoib3BlbmlkIiwiY2xhaW1zIjp7ImlkX3Rva2VuIjp7ImFjciI6eyJ2YWx1ZSI6IjEifX0sInVzZXJpbmZvIjp7InN1YiI6InNvbWUtc3ViamVjdC1pZCIsIm5hbWUiOiJKb2huIERvZSJ9fX0.Y0WMYra5vZPr0eTFX3Xl5K6DIlcm0ivF8g4fxB4xjRJhfEeHAXysclhBssQWqNIAiPCUsEPrQZK_Ka0JTjv-FdpYhq6fJYCMhkSB8Wqy9RBs30OON4E4X7ItsOeqeG1paEREC6HXAx-8o7j9vCm8RPUTVB9mSN038lqNlbTvYs4N0Vo6UOibQUxZWQLKBsXe-HBf6pM-Xv6ost7bTTy-9U6jUzZsZ43HmNQxrdrmZLXxzAv3fp_MUb35HC61GFuTAazXCeOPPM9h-qNLzuQl8ZkadiV474IYpXgnwvah-evFop9Nl329iQ18ku6k7nwPKX35RZH0BxPMtRsOiQYenw';
-    private $jwtWithAcr2 = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOlwvXC9zZXJ2ZXIuYXVkaWVuY2UudXJpIiwicmVzcG9uc2VfdHlwZSI6ImNvZGUiLCJjbGllbnRfaWQiOiJhLWNsaWVudC1pZCIsInJlZGlyZWN0X3VyaSI6Imh0dHBzOlwvXC9hLnJlZGlyZWN0LnVybCIsInNjb3BlIjoib3BlbmlkIiwiY2xhaW1zIjp7ImlkX3Rva2VuIjp7ImFjciI6eyJ2YWx1ZSI6IjIifX0sInVzZXJpbmZvIjp7InN1YiI6InNvbWUtc3ViamVjdC1pZCIsIm5hbWUiOiJKb2huIERvZSJ9fX0.KAXrXQUov-R_hajnGOZrpKQRJJN18fiya7ifPmQA0y2yxPqJgIuEYCD2am1jbv8caH8DJWDBrKOrmDy9O_el6Ij_wtjK41fT_2b1Y3qW6J5Yqoh3CiUxovIJdxwjDrBhIjHt252zt93oHelybV7Yoz-4pwgzxneUcZjmEbneUpNvHWxDm8lQTK5ieyveWQKttmS-zzDvbQHZ-XczM_ugFuSk_OUDd8Z3dDn1_eu2l-wjp5806Om55ggpANYnIadgAUSmCAMXjd8_WM0X_jSrocMCCKFgTIryQdtu1z9Da8CZbrAmiDAhRkaQMokqQoNy7qZGtOHHO-iM-KI_GNTcaA';
+    private $jwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOi8vc2VydmVyLmF1ZGllbmNlLnVyaSIsInJlc3BvbnNlX3R5cGUiOiJjb2RlIiwiY2xpZW50X2lkIjoiYS1jbGllbnQtaWQiLCJyZWRpcmVjdF91cmkiOiJodHRwczovL2EucmVkaXJlY3QudXJsIiwic2NvcGUiOiJvcGVuaWQiLCJjbGFpbXMiOnsiaWRfdG9rZW4iOnsiYXV0aF90aW1lIjp7ImVzc2VudGlhbCI6dHJ1ZX19LCJ1c2VyaW5mbyI6eyJuYW1lIjp7ImVzc2VudGlhbCI6dHJ1ZSwidmFsdWUiOiJKb2huIERvZSJ9LCJlbWFpbCI6eyJlc3NlbnRpYWwiOnRydWV9fX19.g_jMiRIGPFugi0xANRWWU-LC9pLirWvWwh0Z50iFB6TdZ3u6FBethAh7PCOKUavg8jVK3kFPdr9pEAd2jm15Hm9ZhiVeUDuWpJLgeTgz-ymtVanZ_NBAfMPEj56zkVfU6gdfzO8mtB72iZM_jUa8SpqOhGUbprAXlGJaLtPxtKuJtYaec65Ai-IfTJcHTp3cypRTsAmakGXi6l6psJfrWpS_0tauM2SQZHHAE_WLM42ExLyG7X2pnYyVs0vG5oirp6sHJw4OdUuRDDc6RRqLPNPn9oy7xoGMLItDVBqv7MRRKT96sWh3IAAaYnZpnFO-wBMT9AyBNdXJYkOXM8Mu9g';
 }

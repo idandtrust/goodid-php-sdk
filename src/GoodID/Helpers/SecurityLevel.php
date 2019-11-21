@@ -22,30 +22,40 @@
  *
  */
 
-namespace GoodID\Helpers\ClaimChecker;
+namespace GoodID\Helpers;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
 
-class GoodIDAcrChecker implements ClaimCheckerInterface
+final class SecurityLevel
 {
+    const NORMAL = "normal";
+    const HIGH = "high";
+
+    private function __construct()
+    {
+    }
+
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param string $value
+     *
+     * @return bool
+     */
+    public static function isValid($value)
+    {
+        return in_array($value, [
+            self::NORMAL,
+            self::HIGH
+        ], true);
+    }
+
+    /**
+     * @param $value
      *
      * @throws \InvalidArgumentException
-     *
-     * @return string[]
      */
-    public function checkClaim(JWTInterface $jwt)
+    public static function assertValid($value)
     {
-        if (!$jwt->hasClaim('acr')) {
-            return [];
+        if (!self::isValid($value)) {
+            throw new \InvalidArgumentException("Invalid security level provided: " . $value);
         }
-
-        if (!in_array($jwt->getClaim('acr'), ['1', '2', '3', '4'], true)) {
-            throw new \InvalidArgumentException('Invalid acr');
-        }
-
-        return ['acr'];
     }
 }

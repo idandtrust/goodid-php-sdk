@@ -10,34 +10,11 @@ use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
+use GoodID\SecurityLevel;
 use GoodID\ServiceLocator;
 
 class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Invalid ACR
-     */
-    public function itFailsWhenAcrIsInvalid()
-    {
-        $serviceLocator = $this->createMock(ServiceLocator::class);
-        $invalidACR = 12;
-        $mockKey = $this->createMock(RSAPrivateKey::class);
-        $mockRequestSource = $this->createMock(OpenIDRequestSource::class);
-
-        GoodIDEndpointFactory::createGoodIDEndpoint(
-            $serviceLocator,
-            null,
-            $mockKey,
-            $mockKey,
-            $mockRequestSource,
-            null,
-            $invalidACR,
-            null
-        );
-    }
-
     /**
      * @test
      */
@@ -59,7 +36,6 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
             $this->createMock(RSAPrivateKey::class),
             $this->createMock(OpenIDRequestSource::class),
             'https://some.redirect.uri',
-            Acr::LEVEL_1,
             $this->createMock(IncomingRequest::class),
             0
         );

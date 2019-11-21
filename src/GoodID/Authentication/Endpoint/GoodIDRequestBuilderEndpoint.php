@@ -40,8 +40,16 @@ use GoodID\Helpers\UrlSafeBase64Encoder;
  */
 class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
 {
+    /**
+     * @var GoodidSession
+     */
     private $goodidSession;
 
+    /**
+     * @param GoodidSession $session
+     *
+     * @return $this
+     */
     public function bindGoodidSession(GoodidSession $session)
     {
         $this->goodidSession = $session;
@@ -111,7 +119,6 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
                 $this->clientId,
                 $this->redirectUri,
                 $this->goodIdServerConfig,
-                $this->acr,
                 $this->maxAge
             );
 

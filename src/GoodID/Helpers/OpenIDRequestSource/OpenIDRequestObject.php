@@ -25,7 +25,6 @@
 namespace GoodID\Helpers\OpenIDRequestSource;
 
 use GoodID\Exception\GoodIDException;
-use GoodID\Helpers\Acr;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\Key\RSAPublicKey;
@@ -71,9 +70,6 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $clientId RP client id
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
-     * @param string $acr Required ACR level of assurance, @uses Acr::LEVEL_*
-     *    If $this->claims already has acr, then the requested acr value will be
-     *    the maximum of $claims['id_token']['acr']['value'] and $acr.
      * @param int|null $maxAge Maximum authentication age
      *
      * @return string JWT
@@ -85,14 +81,12 @@ class OpenIDRequestObject implements OpenIDRequestSource
         $clientId,
         $redirectUri,
         GoodIDServerConfig $goodIdServerConfig,
-        $acr = Acr::LEVEL_DEFAULT,
         $maxAge = null
     ) {
         $array = $this->toArray(
             $clientId,
             $redirectUri,
             $goodIdServerConfig,
-            $acr,
             $maxAge
         );
 
@@ -105,26 +99,16 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $clientId RP client id
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
-     * @param string $acr Required ACR level of assurance, @uses Acr::LEVEL_*
-     *    If $this->claims already has acr, then the requested acr value will be
-     *    the maximum of $claims['id_token']['acr']['value'] and $acr.
      * @param int|null $maxAge Maximum authentication age
+     *
      * @return array
-     * @throws GoodIDException
      */
     public function toArray(
         $clientId,
         $redirectUri,
         GoodIDServerConfig $goodIdServerConfig,
-        $acr = Acr::LEVEL_DEFAULT,
         $maxAge = null
     ) {
-        if (!Acr::isValid($acr)) {
-            throw new GoodIDException("Invalid ACR: " . $acr);
-        }
-
-        $this->claims = $this->addAcr($this->claims, $acr);
-
         $array = [
             'iss' => $clientId,
             'aud' => $goodIdServerConfig->getAudienceUri(),
@@ -132,7 +116,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'scope' => self::SCOPE_OPENID,
-            'claims' => $this->emptyArrayToObjectRecursive($this->claims)
+            'claims' => count($this->claims) === 0 ? [] : $this->emptyArrayToObjectRecursive($this->claims)
         ];
 
         if (!is_null($maxAge)) {
@@ -150,6 +134,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      *
      * @param array $array Request Object as array
      * @param RSAPrivateKey $sigPrivKey Private signature key
+     *
      * @return string Request Object as JWT string
      */
     public function generateFromArray(array $array, RSAPrivateKey $sigPrivKey)
@@ -158,54 +143,10 @@ class OpenIDRequestObject implements OpenIDRequestSource
     }
 
     /**
-     * Add acr to claims
-     *
-     * @param array $claims Claims
-     * @param string $acr ACR @uses Acr::LEVEL_*
-     *
-     * @return array Claims
-     */
-    private function addAcr(array $claims, $acr)
-    {
-        if (!isset($claims['id_token'])) {
-            $claims['id_token'] = [];
-        }
-
-        if (!isset($claims['id_token']['acr'])) {
-            $claims['id_token']['acr'] = [];
-        }
-
-        if (isset($claims['id_token']['acr']['value'])) {
-            $claims['id_token']['acr']['value'] = (string) max([
-                (int) $claims['id_token']['acr']['value'],
-                (int) $acr
-            ]);
-        } elseif (isset($claims['id_token']['acr']['values'])) {
-            $maxAcrValue = 0;
-            $acrValues = array_map(function ($acr) use (&$maxAcrValue) {
-                $acrValue = (int)$acr;
-                if ($acrValue > $maxAcrValue) {
-                    $maxAcrValue = $acrValue;
-                }
-                return $acrValue;
-            }, $claims['id_token']['acr']['values']);
-            if ($acr > $maxAcrValue) {
-                array_push($acrValues, $acr);
-            }
-            $claims['id_token']['acr']['values'] = array_map(function ($acrValue) {
-                return (string) $acrValue;
-            }, $acrValues);
-        } else {
-            $claims['id_token']['acr']['value'] = (string) $acr;
-        }
-
-        return $claims;
-    }
-
-    /**
      * Converts all empty arrays to empty (stdClass) objects recursively
      *
      * @param mixed $dataStructure Data structure
+     *
      * @return mixed Data structure
      */
     private function emptyArrayToObjectRecursive($dataStructure)

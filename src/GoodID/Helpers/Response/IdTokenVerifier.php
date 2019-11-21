@@ -25,14 +25,10 @@
 namespace GoodID\Helpers\Response;
 
 use GoodID\Exception\ValidationException;
+use GoodID\Helpers\ClaimChecker\AppSignaturePresenceChecker;
 use GoodID\Helpers\ClaimChecker\AudienceChecker;
 use GoodID\Helpers\ClaimChecker\AuthTimeChecker;
 use GoodID\Helpers\ClaimChecker\ExpirationChecker;
-use GoodID\Helpers\ClaimChecker\GoodIDAcrChecker;
-use GoodID\Helpers\ClaimChecker\GoodIDAppSealChecker;
-use GoodID\Helpers\ClaimChecker\GoodIDAppSignatureChecker;
-use GoodID\Helpers\ClaimChecker\GoodIDAppUserChecker;
-use GoodID\Helpers\ClaimChecker\GoodIDEmailHashChecker;
 use GoodID\Helpers\ClaimChecker\IssuerChecker;
 use GoodID\Helpers\ClaimChecker\NonceChecker;
 use GoodID\Helpers\ClaimChecker\RequiredClaimChecker;
@@ -51,12 +47,12 @@ class IdTokenVerifier
      * IdTokenVerifier constructor.
      * @param string $issuer
      * @param string $clientId
+     * @param string $securityLevel
      * @param null|int $requestedMaxAge
      * @param bool $authTimeRequested
      * @param null|string $nonce
-     * @param null|string $acr
      */
-    public function __construct($issuer, $clientId, $requestedMaxAge, $authTimeRequested, $nonce, $acr = null)
+    public function __construct($issuer, $clientId, $securityLevel, $requestedMaxAge, $authTimeRequested, $nonce)
     {
         $timeToleranceInSeconds = 0;
 
@@ -71,16 +67,8 @@ class IdTokenVerifier
         $checker->addClaimChecker(new NonceChecker($nonce));
 
         // GoodID specific validation
-        $appSignatureChecklist = new AppSignatureChecklist();
-        $checker->addClaimChecker(new GoodIDAcrChecker());
-        if (!$acr || !in_array($acr, array('3', '4'))) {
-            $checker->addClaimChecker(new GoodIDEmailHashChecker());
-            $checker->addClaimChecker(new RequiredClaimChecker('email_hash'));
-        }
-        $checker->addClaimChecker(new GoodIDAppSignatureChecker($appSignatureChecklist));
-        $checker->addClaimChecker(new GoodIDAppUserChecker($appSignatureChecklist));
-        $checker->addClaimChecker(new GoodIDAppSealChecker($appSignatureChecklist));
         $checker->addClaimChecker(new RequiredClaimChecker('uih'));
+        $checker->addClaimChecker(new AppSignaturePresenceChecker($securityLevel));
 
         $this->checker = $checker;
     }

@@ -32,6 +32,6 @@ class Config
     /**
      * The version of this SDK
      */
-    const GOODID_PHP_SDK_VERSION = "3.1.1";
+    const GOODID_PHP_SDK_VERSION = "4.0.0";
     const GOODID_PROFILE_VERSION = "1.0";
 }

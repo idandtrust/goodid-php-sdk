@@ -1,11 +1,41 @@
 <?php
+/**
+ * Copyright 2017 ID&Trust, Ltd.
+ *
+ * You are hereby granted a non-exclusive, worldwide, royalty-free license to
+ * use, copy, modify, and distribute this software in source code or binary form
+ * for use in connection with the web services and APIs provided by ID&Trust.
+ *
+ * As with any software that integrates with the GoodID platform, your use
+ * of this software is subject to the GoodID Terms of Service
+ * (https://goodid.net/docs/tos).
+ * This copyright notice shall be included in all copies or substantial portions
+ * of the software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ */
 
 namespace GoodID\Helpers;
 
 class GoodidSessionStore implements GoodidSessionStoreInterface
 {
+    /**
+     * @var string
+     */
     private $sessionDirectory;
 
+    /**
+     * GoodidSessionStore constructor.
+     *
+     * @param string $sessionDirectory
+     */
     public function __construct($sessionDirectory)
     {
         $this->sessionDirectory = $sessionDirectory;
@@ -16,7 +46,7 @@ class GoodidSessionStore implements GoodidSessionStoreInterface
      */
     public function createGoodidSession()
     {
-        return new GoodidSession(uniqid('gsid_'));
+        return new GoodidSession();
     }
 
     /**
@@ -29,6 +59,7 @@ class GoodidSessionStore implements GoodidSessionStoreInterface
 
     /**
      * @param string $sessionId
+     *
      * @return GoodidSession
      */
     public function loadGoodidSession($sessionId)

@@ -27,7 +27,6 @@ namespace GoodID\Authentication;
 use GoodID\Authentication\Endpoint\AbstractGoodIDEndpoint;
 use GoodID\Authentication\Endpoint\GoodIDRequestBuilderEndpoint;
 use GoodID\Exception\GoodIDException;
-use GoodID\Helpers\Acr;
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
@@ -47,11 +46,6 @@ final class GoodIDEndpointFactory
      * @param RSAPrivateKey $encryptionKey The encryption key-pair of the RP. Can be the same as $signingKey.
      * @param OpenIDRequestSource $requestSource An object representing the source of the request object
      * @param string $redirectUri The redirect URI that will be used at normal sign-ins
-     * @param string $acr The ACR level of assurance required at normal sign-ins, @uses Acr::LEVEL_*
-     *    This value has no effect when an OpenIDRequestObjectJWT or an OpenIDRequestURI is used,
-     *    as they already have acr values embedded in them.
-     *    When using an OpenIDRequestObject with $claims already having acr,
-     *    the requested acr value will be the maximum of $claims['id_token']['acr']['value'] and $acr.
      * @param IncomingRequest|null $incomingRequest Please set to null
      * @param int|null $maxAge Maximum accepted authentication age
      *    This value has no effect when an OpenIDRequestObjectJWT or an OpenIDRequestURI is used
@@ -67,14 +61,9 @@ final class GoodIDEndpointFactory
         RSAPrivateKey $encryptionKey,
         OpenIDRequestSource $requestSource,
         $redirectUri,
-        $acr = Acr::LEVEL_DEFAULT,
         IncomingRequest $incomingRequest = null,
         $maxAge = null
     ) {
-        if (!Acr::isValid($acr)) {
-            throw new GoodIDException("Invalid ACR: " . $acr);
-        }
-
         $goodIdServerConfig = $serviceLocator->getServerConfig();
 
         $incomingRequest = $incomingRequest ?: new IncomingRequest();
@@ -88,7 +77,6 @@ final class GoodIDEndpointFactory
             $encryptionKey,
             $requestSource,
             $redirectUri,
-            $acr,
             $goodIdServerConfig,
             $sessionDataHandler,
             $stateNonceHandler,

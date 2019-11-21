@@ -118,6 +118,7 @@ class GoodIDResponse
      * @param ServiceLocator $serviceLocator
      * @param string $clientId The client id of the RP
      * @param string $clientSecret The client secret of the RP
+     * @param String $securityLevel
      * @param RSAPrivateKey $signingKey The signing key-pair of the RP
      * @param RSAPrivateKey|array $encryptionKeyOrKeys
      *     The encryption key-pair of the RP.
@@ -132,6 +133,7 @@ class GoodIDResponse
         ServiceLocator $serviceLocator,
         $clientId,
         $clientSecret,
+        $securityLevel,
         RSAPrivateKey $signingKey,
         $encryptionKeyOrKeys,
         $matchingResponseValidation = true,
@@ -229,6 +231,7 @@ class GoodIDResponse
             $idToken = $tokenExtractor->extractToken($jwe);
             $idTokenVerifier = $serviceLocator->getIdTokenVerifier(
                 $clientId,
+                $securityLevel,
                 $requestedMaxAge,
                 $authTimeRequested,
                 $stateNonceHandler->getCurrentNonce(),
@@ -243,7 +246,7 @@ class GoodIDResponse
             $userinfoRequest->execute();
 
             $userinfo = $tokenExtractor->extractToken($userinfoRequest->getUserInfoJwe());
-            $userinfoVerifier = $serviceLocator->getUserinfoVerifier($idToken);
+            $userinfoVerifier = $serviceLocator->getUserinfoVerifier($securityLevel, $idToken);
             $userinfoVerifier->verifyUserinfo($userinfo);
 
             // Matching response validation

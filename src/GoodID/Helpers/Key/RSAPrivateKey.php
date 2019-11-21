@@ -62,7 +62,8 @@ class RSAPrivateKey extends RSAPublicKey
      */
     public function signAsCompactJws(array $payload)
     {
-        return JWSFactory::createJWSToCompactJSON($payload, $this->jwk, [
+        $jsonString = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        return JWSFactory::createJWSToCompactJSON($jsonString, $this->jwk, [
             self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
             self::KEY_ID => $this->getKid()
         ]);

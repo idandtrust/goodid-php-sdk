@@ -24,24 +24,18 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use GoodID\Helpers\Response\AppSignatureChecklist;
+use GoodID\Helpers\SecurityLevel;
 use Jose\Checker\ClaimCheckerInterface;
 use Jose\Object\JWTInterface;
 
-class GoodIDAppSealChecker implements ClaimCheckerInterface
+class AppSignaturePresenceChecker implements ClaimCheckerInterface
 {
-    /**
-     * @var AppSignatureChecklist
-     */
-    private $appSignatureChecklist;
+    private $securityLevel;
 
-    /**
-     * GoodIDAppUserChecker constructor.
-     * @param AppSignatureChecklist $appSignatureChecklist
-     */
-    public function __construct(AppSignatureChecklist $appSignatureChecklist)
+    public function __construct($securityLevel = SecurityLevel::NORMAL)
     {
-        $this->appSignatureChecklist = $appSignatureChecklist;
+        SecurityLevel::assertValid($securityLevel);
+        $this->securityLevel = $securityLevel;
     }
 
     /**
@@ -53,24 +47,32 @@ class GoodIDAppSealChecker implements ClaimCheckerInterface
      */
     public function checkClaim(JWTInterface $jwt)
     {
-        $acr = $jwt->hasClaim('acr') ? (int)$jwt->getClaim('acr') : 0;
-        $seal = $jwt->hasClaim('seal') ? $jwt->getClaim('seal') : null;
-
-        if ($acr < 4) {
-            if ($seal !== null) {
-                throw new \InvalidArgumentException('Unverifiable seal claim');
+        if ($this->securityLevel === SecurityLevel::HIGH) {
+            if (!$jwt->hasClaim('signatures')) {
+                throw new \InvalidArgumentException('Missing app signatures');
             }
+
+            $signatures = $jwt->getClaim('signatures');
+            if (!is_array($signatures)) {
+                throw new \InvalidArgumentException('Malformed app signatures');
+            }
+
+            foreach ($signatures as $signature) {
+                if (!is_array($signature)) {
+                    throw new \InvalidArgumentException('Malformed app signatures');
+                }
+                if (count($signature) !== 2 || !isset($signature['protected']) || !isset($signature['signature'])) {
+                    throw new \InvalidArgumentException('Malformed app signatures');
+                }
+            }
+
+            return ['signatures'];
+        } else {
+            if ($jwt->hasClaim('signatures')) {
+                throw new \InvalidArgumentException('Unexpected app signatures');
+            }
+
             return [];
         }
-
-        if ($seal === null) {
-            throw new \InvalidArgumentException('Missing seal claim');
-        }
-
-        if (!$this->appSignatureChecklist->isClaimSigned('seal')) {
-            throw new \InvalidArgumentException('Unverifiable seal claim');
-        }
-
-        return ['seal'];
     }
 }

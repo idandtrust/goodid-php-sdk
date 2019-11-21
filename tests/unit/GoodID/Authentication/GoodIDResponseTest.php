@@ -518,6 +518,20 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     */
+    public function itCallsIdTokenVerifier() {
+        $this->markTestIncomplete();
+    }
+
+    /**
+     * @test
+     */
+    public function itCallsUserinfoVerifier() {
+        $this->markTestIncomplete();
+    }
+
+    /**
      *
      * @param array $params
      * @return GoodIDResponse
@@ -545,11 +559,6 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
             $tokenExtractor = $params['tokenExtractor'];
         } else {
             $tokenExtractor = $this->createMock(TokenExtractor::class);
-//            $token = JWSFactory::createJWS([]);
-//            $token = $token->addSignatureInformation(new JWK(['kty' => 'none']), ['alg' => 'ES-256']);
-//            $tokenExtractor
-//                ->method('extractToken')
-//                ->willReturn($token);
             $tokenExtractor->method('extractToken')->willReturn(JWSFactory::createJWS([]));
         }
         $serviceLocator->method('getTokenExtractor')->willReturn($tokenExtractor);
@@ -568,6 +577,7 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
 
         $clientId = isset($params['clientId']) ? $params['clientId'] : null;
         $clientSecret = isset($params['clientSecret']) ? $params['clientSecret'] : null;
+        $securityLevel = isset($params['securityLevel']) ? $params['securityLevel'] : null;
         $signingKey = isset($params['signingKey']) ? $params['signingKey'] : $this->createMock(RSAPrivateKey::class);
         if (isset($params['encryptionKey'])) {
             $encryptionKey = $params['encryptionKey'];
@@ -585,6 +595,7 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
             $serviceLocator,
             $clientId,
             $clientSecret,
+            $securityLevel,
             $signingKey,
             $encryptionKey,
             $matchingResponseValidation,

@@ -25,9 +25,10 @@
 namespace GoodID\Helpers\Response;
 
 use GoodID\Exception\ValidationException;
+use GoodID\Helpers\ClaimChecker\AppSignatureChecker;
 use GoodID\Helpers\ClaimChecker\GoodIDUserinfoHashChecker;
-use GoodID\Helpers\ClaimChecker\GoodIDVerifiedEmailChecker;
 use GoodID\Helpers\ClaimChecker\SubChecker;
+use GoodID\Helpers\SecurityLevel;
 use Jose\Checker\CheckerManager;
 use Jose\Object\JWSInterface;
 
@@ -42,18 +43,18 @@ class UserinfoVerifier
      * UserinfoVerifier constructor.
      * @param JWSInterface $idToken
      */
-    public function __construct(JWSInterface $idToken)
+    public function __construct($securityLevel, JWSInterface $idToken)
     {
+        SecurityLevel::assertValid($securityLevel);
+
         $checker = new CheckerManager();
         // OpenID specific validation
         $checker->addClaimChecker(new SubChecker($idToken->getClaim('sub')));
 
         // GoodID specific validation
-        $acr = $idToken->hasClaim('acr') ? $idToken->getClaim('acr') : null;
-        if (!$acr || !in_array($acr, array('3', '4'))) {
-            $checker->addClaimChecker(new GoodIDVerifiedEmailChecker($idToken));
-        }
         $checker->addClaimChecker(new GoodIDUserinfoHashChecker($idToken));
+        $checker->addClaimChecker(new AppSignatureChecker($securityLevel, $idToken, 'user'));
+        $checker->addClaimChecker(new AppSignatureChecker($securityLevel, $idToken, 'seal'));
 
         $this->checker = $checker;
     }
