@@ -232,7 +232,7 @@ class GoodIDResponse
                 ? $usedRequestObjectAsArray['max_age']
                 : null;
 
-            $authTimeRequested = is_array($usedRequestObjectAsArray['claims']['id_token']) && isset($usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential'] === true;
+            $authTimeRequested = isset($usedRequestObjectAsArray['claims']) && isset($usedRequestObjectAsArray['claims']['id_token']) && is_array($usedRequestObjectAsArray['claims']['id_token']) && isset($usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential'] === true;
             $authTimeRequested |= isset($usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential'] === true;
 
             $idToken = $tokenExtractor->extractToken($jwe);
