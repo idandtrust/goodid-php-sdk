@@ -35,6 +35,7 @@ use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\Helpers\Response\Claims;
 use GoodID\Helpers\Response\LegacyClaimAdapter;
 use GoodID\Helpers\Response\ResponseValidator;
+use GoodID\Helpers\SecurityLevel;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\ServiceLocator;
 use Jose\Object\JWKSet;
@@ -45,6 +46,11 @@ use Jose\Object\JWSInterface;
  */
 class GoodIDResponse
 {
+    /**
+     * @var string
+     */
+    private $securityLevel;
+
     /**
      * @var array|null
      */
@@ -118,7 +124,7 @@ class GoodIDResponse
      * @param ServiceLocator $serviceLocator
      * @param string $clientId The client id of the RP
      * @param string $clientSecret The client secret of the RP
-     * @param String $securityLevel
+     * @param string $securityLevel
      * @param RSAPrivateKey $signingKey The signing key-pair of the RP
      * @param RSAPrivateKey|array $encryptionKeyOrKeys
      *     The encryption key-pair of the RP.
@@ -140,6 +146,7 @@ class GoodIDResponse
         IncomingRequest $incomingRequest = null
     ) {
         $encryptionKeys = $this->checkAndUnifyEncryptionKeys($encryptionKeyOrKeys);
+        $this->securityLevel = $securityLevel;
 
         $stateNonceHandler = $serviceLocator->getStateNonceHandler();
         $goodidSession = null;
@@ -225,7 +232,7 @@ class GoodIDResponse
                 ? $usedRequestObjectAsArray['max_age']
                 : null;
 
-            $authTimeRequested = isset($usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential'] === true;
+            $authTimeRequested = is_array($usedRequestObjectAsArray['claims']['id_token']) && isset($usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential'] === true;
             $authTimeRequested |= isset($usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential'] === true;
 
             $idToken = $tokenExtractor->extractToken($jwe);
@@ -329,7 +336,7 @@ class GoodIDResponse
     }
 
     /**
-     * Returns the identifier of the GoodID user
+     * Returns the subject identifier of the GoodID user
      *
      * @return string Subject identifier
      *
@@ -347,6 +354,56 @@ class GoodIDResponse
         }
 
         return $this->data['sub'];
+    }
+
+    /**
+     * Returns the identifier of the GoodID user if the security level of the RP is high
+     *
+     * @return string User identifier
+     *
+     * @throws GoodIDException
+     */
+    public function getUserId()
+    {
+        if ($this->hasError()) {
+            throw new GoodIDException(__METHOD__ . " called when there was an error: "
+                . $this->error . ": " . $this->errorDescription);
+        }
+
+        if ($this->securityLevel !== SecurityLevel::HIGH) {
+            throw new GoodIDException("userId is available only on 'high' SecurityLevel");
+        }
+
+        if (!$this->userinfo->hasClaim('user')) {
+            throw new GoodIDException("Internal error: user not set");
+        }
+
+        return $this->userinfo->getClaim('user');
+    }
+
+    /**
+     * Returns the identifier of the device of the GoodID user if the security level of the RP is high
+     *
+     * @return string Device identifier
+     *
+     * @throws GoodIDException
+     */
+    public function getDeviceId()
+    {
+        if ($this->hasError()) {
+            throw new GoodIDException(__METHOD__ . " called when there was an error: "
+                . $this->error . ": " . $this->errorDescription);
+        }
+
+        if ($this->securityLevel !== SecurityLevel::HIGH) {
+            throw new GoodIDException("deviceId is available only on 'high' SecurityLevel");
+        }
+
+        if (!$this->userinfo->hasClaim('seal')) {
+            throw new GoodIDException("Internal error: seal not set");
+        }
+
+        return $this->userinfo->getClaim('seal');
     }
 
     /**
