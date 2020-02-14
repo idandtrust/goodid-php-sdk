@@ -157,6 +157,34 @@ class HttpRequest
         return $this->curl($this->curlOpts);
     }
 
+    /**
+     * 
+     * @param string $text
+     * 
+     * @return HttpResponse response
+     */
+    public function postText($text)
+    {
+        $assocHeaders = [];
+        $curlHeaders = array_key_exists(CURLOPT_HTTPHEADER, $this->curlOpts) ? $this->curlOpts[CURLOPT_HTTPHEADER] : [];
+        foreach ($curlHeaders as $curlHeader) {
+            $assocHeader = explode(': ', $curlHeader, 2);
+            $assocHeaders[$assocHeader[0]] = $assocHeader[1];
+        }
+        $assocHeaders = array_merge([
+                'Content-Type' => 'text/plain',
+                'Content-Length' => strlen($text),
+            ],
+            $assocHeaders
+        );
+
+        $this->setHeaders($assocHeaders);
+        $this->curlOpts[CURLOPT_POST] = true;
+        $this->curlOpts[CURLOPT_POSTFIELDS] = $text;
+
+        return $this->curl($this->curlOpts);
+    }
+
     public function putJson($data)
     {
         $jsonData = json_encode($data);

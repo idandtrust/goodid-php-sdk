@@ -22,16 +22,65 @@
  *
  */
 
-namespace GoodID\Helpers;
+namespace GoodID\Helpers\Push;
 
 /**
- * This class contains the main configuration values corresponding to this version of the GoodID PHP SDK
+ * PushToken returned from Token endpoint.
+ * It can be used to send push notification if that is enabled for the client.
+ *
  */
-class Config
+class PushTokenResponse
 {
     /**
-     * The version of this SDK
+     * @var string
      */
-    const GOODID_PHP_SDK_VERSION = "4.2.0";
-    const GOODID_PROFILE_VERSION = "1.0";
+    private $token;
+
+    /**
+     *
+     * @var \DateTime
+     */
+    private $expiresAt;
+
+    /**
+     * @var string
+     */
+    private $type;
+
+    /**
+     * @param string $token
+     * @param int $expiresIn
+     * @param string $type
+     */
+    public function __construct($token, $expiresIn, $type)
+    {
+        $this->token = $token;
+        $this->expiresAt = $date = new \DateTime();
+        $this->expiresAt->modify("+" . $expiresIn . " seconds");
+        $this->type = $type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
+     * @return string
+     */
+    public function getToken()
+    {
+        return $this->token;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getExpiresAt()
+    {
+        return $this->expiresAt;
+    }
 }

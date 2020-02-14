@@ -79,6 +79,26 @@ class OpenIDRequestObjectJWT implements OpenIDRequestSource
     }
 
     /**
+     * Returns the scopes as an array if they are not encrypted
+     *
+     * @param RSAPublicKey $sigPubKey The RP signature key (public)
+     *
+     * @return array|string scopes or self::CONTENT_IS_ENCRYPTED
+     *
+     * @throws GoodIDException on error
+     */
+    public function getScopes(RSAPublicKey $sigPubKey)
+    {
+        $array = $this->toArray($sigPubKey);
+
+        if ($array === self::CONTENT_IS_ENCRYPTED) {
+            return self::CONTENT_IS_ENCRYPTED;
+        }
+
+        return isset($array['scope']) ? explode(' ', $array['scope']) : [];
+    }
+
+    /**
      * Returns the request object as an array if it is not encrypted
      *
      * @param RSAPublicKey $sigPubKey The RP signature key (public)

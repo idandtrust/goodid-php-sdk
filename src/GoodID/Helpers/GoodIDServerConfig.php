@@ -74,6 +74,14 @@ class GoodIDServerConfig
     }
 
     /**
+     * @return string GoodID Push URI
+     */
+    public function getPushUri()
+    {
+        return 'https://push.goodid.net';
+    }
+
+    /**
      * @return string GoodID Authorization Endpoint URI
      */
     public function getAuthorizationEndpointUri()
@@ -119,6 +127,14 @@ class GoodIDServerConfig
     public function getJwksUri()
     {
         return $this->getIdpUri() . '/jwks.json';
+    }
+
+    /**
+     * @return string
+     */
+    public function getPushSenderUri()
+    {
+        return $this->getPushUri() . '/push-messages';
     }
 
     /**

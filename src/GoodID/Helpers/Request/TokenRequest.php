@@ -30,6 +30,7 @@ use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Http\HttpRequest;
 use GoodID\Helpers\Http\HttpResponse;
 use GoodID\Helpers\UrlSafeBase64Encoder;
+use GoodID\Helpers\Push\PushTokenResponse;
 
 /**
  * Objects of this class can make a request to the GoodID Server's Token Endpoint
@@ -85,6 +86,11 @@ class TokenRequest
      * @var bool
      */
     private $isTotpEnabled;
+
+    /**
+     * @var PushTokenResponse|null
+     */
+    private $pushTokenResponse;
 
     /**
      * Make a request to the GoodID Server's Token Endpoint
@@ -150,6 +156,12 @@ class TokenRequest
         $this->idTokenJwe = $tokenResponseArray['id_token'];
         $this->goodIDServerTime = $tokenResponseArray['server_time'];
         $this->isTotpEnabled = isset($tokenResponseArray['is_totp_enabled']) ? (bool)$tokenResponseArray['is_totp_enabled'] : false;
+        $this->pushTokenResponse = isset($tokenResponseArray['push_token']) 
+            ? new PushTokenResponse(
+                    $tokenResponseArray['push_token'],
+                    $tokenResponseArray['push_token_expires_in'],
+                    $tokenResponseArray['push_token_type'])
+            : null;
     }
 
     /**
@@ -162,6 +174,13 @@ class TokenRequest
         return !is_null($this->accessToken);
     }
 
+    /**
+     * @return bool
+     */
+    public function hasPushToken()
+    {
+        return !is_null($this->pushTokenResponse);
+    }
 
     /**
      * Get the returned access token
@@ -171,6 +190,14 @@ class TokenRequest
     public function getAccessToken()
     {
         return $this->accessToken;
+    }
+
+    /**
+     * @return PushTokenResponse|null
+     */
+    public function getPushTokenResponse()
+    {
+        return $this->pushTokenResponse;
     }
 
     /**

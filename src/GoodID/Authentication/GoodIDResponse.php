@@ -31,6 +31,7 @@ use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\Key\RSAPublicKey;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
+use GoodID\Helpers\Push\PushTokenResponse;
 use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\Helpers\Response\Claims;
 use GoodID\Helpers\Response\LegacyClaimAdapter;
@@ -75,6 +76,11 @@ class GoodIDResponse
      * @var string
      */
     private $accessToken;
+
+    /**
+     * @var PushTokenResponse|null
+     */
+    private $pushTokenResponse;
 
     /**
      * @var string|null
@@ -270,6 +276,7 @@ class GoodIDResponse
             }
 
             $this->accessToken = $tokenRequest->getAccessToken();
+            $this->pushTokenResponse = $tokenRequest->getPushTokenResponse();
             $claimAdapter = new LegacyClaimAdapter();
 
             // Merge tokens
@@ -407,6 +414,77 @@ class GoodIDResponse
     }
 
     /**
+     * Returns the user JWK of the GoodID user if the security level of the RP is high
+     *
+     * @return string Device JWK
+     *
+     * @throws GoodIDException
+     */
+    public function getDeviceJWK()
+    {
+        if ($this->hasError()) {
+            throw new GoodIDException(__METHOD__ . " called when there was an error: "
+                . $this->error . ": " . $this->errorDescription);
+        }
+
+        if ($this->securityLevel !== SecurityLevel::HIGH) {
+            throw new GoodIDException("deviceJWK is available only on 'high' SecurityLevel");
+        }
+
+        if (!$this->userinfo->hasClaim('seal_jwk')) {
+            throw new GoodIDException("Internal error: seal_jwk not set");
+        }
+
+        return $this->userinfo->getClaim('seal_jwk');
+    }
+
+    /**
+     * Returns the user JWK of the GoodID user if the security level of the RP is high
+     *
+     * @return string User JWK
+     *
+     * @throws GoodIDException
+     */
+    public function getUserJWK()
+    {
+        if ($this->hasError()) {
+            throw new GoodIDException(__METHOD__ . " called when there was an error: "
+                . $this->error . ": " . $this->errorDescription);
+        }
+
+        if ($this->securityLevel !== SecurityLevel::HIGH) {
+            throw new GoodIDException("userJWK is available only on 'high' SecurityLevel");
+        }
+
+        if (!$this->userinfo->hasClaim('user_jwk')) {
+            throw new GoodIDException("Internal error: user_jwk not set");
+        }
+
+        return $this->userinfo->getClaim('user_jwk');
+    }
+
+    /**
+     * Returns the encryption key for the GoodID user
+     *
+     * @return string User enc JWK
+     *
+     * @throws GoodIDException
+     */
+    public function getUserEncJWK()
+    {
+        if ($this->hasError()) {
+            throw new GoodIDException(__METHOD__ . " called when there was an error: "
+                . $this->error . ": " . $this->errorDescription);
+        }
+
+        if (!$this->userinfo->hasClaim('user_enc_jwk')) {
+            throw new GoodIDException("Internal error: user_enc_jwk not set");
+        }
+
+        return $this->userinfo->getClaim('user_enc_jwk');
+    }
+
+    /**
      * Returns the received data as a single multilevel array
      *
      * @return array user data
@@ -513,6 +591,22 @@ class GoodIDResponse
         }
 
         return $this->accessToken;
+    }
+    
+    /**
+     * @return bool
+     */
+    public function hasPushToken()
+    {
+        return !is_null($this->pushTokenResponse);
+    }
+
+    /**
+     * @return PushTokenResponse|null
+     */
+    public function getPushTokenResponse()
+    {
+        return $this->pushTokenResponse;
     }
 
     /**

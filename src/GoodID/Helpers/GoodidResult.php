@@ -24,14 +24,56 @@
 
 namespace GoodID\Helpers;
 
-/**
- * This class contains the main configuration values corresponding to this version of the GoodID PHP SDK
- */
-class Config
+final class GoodidResult
 {
     /**
-     * The version of this SDK
+     * @var bool
      */
-    const GOODID_PHP_SDK_VERSION = "4.2.0";
-    const GOODID_PROFILE_VERSION = "1.0";
+    private $success;
+
+    /**
+     * @var string
+     */
+    private $description;
+
+    /**
+     * @param bool $isSuccess
+     */
+    public function __construct($isSuccess)
+    {
+        $this->success = $isSuccess;
+    }
+
+    /**
+     * @param string $description
+     */
+    public function setErrorDescription($description)
+    {
+        if ($this->success) {
+            throw new \Exception('Do not set error description in case of success result.');
+        }
+
+        $this->description = $description;
+    }
+
+    /**
+     * @return string
+     */
+    public function get()
+    {
+        $result['success'] = (bool) $this->success;
+        if (!$this->description) {
+            $result['error_description'] = $this->description;
+        }
+
+        return json_encode($result);
+    }
+
+    /**
+     * @return void
+     */
+    public function setHeader()
+    {
+        header('goodid_result:' . $this->get());
+    }
 }

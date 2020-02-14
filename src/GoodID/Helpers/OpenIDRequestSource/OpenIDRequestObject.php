@@ -42,6 +42,11 @@ class OpenIDRequestObject implements OpenIDRequestSource
     private $claims;
 
     /**
+     * @var array
+     */
+    private $scopes = array();
+
+    /**
      * OpenIDRequestObject constructor
      *
      * @param string|array $claims The requested claims as a string (JSON) or array.
@@ -60,6 +65,18 @@ class OpenIDRequestObject implements OpenIDRequestSource
             $this->claims = $claims;
         } else {
             throw new GoodIDException("Claims parameter must be string (JSON) or array.");
+        }
+        
+        $this->scopes[] = self::SCOPE_OPENID;
+    }
+
+    /**
+     * @param string $scope
+     */
+    public function addScope($scope)
+    {
+        if (!in_array($scope, $this->scopes)) {
+            $this->scopes[] = $scope;
         }
     }
 
@@ -115,7 +132,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
             'response_type' => self::RESPONSE_TYPE_CODE,
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
-            'scope' => self::SCOPE_OPENID,
+            'scope' => implode(' ', $this->scopes),
             'claims' => count($this->claims) === 0 ? [] : $this->emptyArrayToObjectRecursive($this->claims)
         ];
 
@@ -186,5 +203,17 @@ class OpenIDRequestObject implements OpenIDRequestSource
     public function getClaims(RSAPublicKey $sigKey)
     {
         return $this->claims;
+    }
+
+    /**
+     * Returns the scopes as an array
+     *
+     * @param RSAPublicKey $sigKey RP Signature key
+     *
+     * @return array scopes as an array
+     */
+    public function getScopes(RSAPublicKey $sigKey)
+    {
+        return $this->scopes;
     }
 }

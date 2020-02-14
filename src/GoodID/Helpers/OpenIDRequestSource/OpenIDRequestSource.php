@@ -60,4 +60,16 @@ interface OpenIDRequestSource
      * @return array|string Claims array or OpenIDRequestSource::CONTENT_IS_ENCRYPTED
      */
     public function getClaims(RSAPublicKey $sigPubKey);
+
+    /**
+     * Returns the scopes corresponding to the OpenIDRequestSource if they are
+     * not encrypted, otherwise it returns OpenIDRequestSource::CONTENT_IS_ENCRYPTED
+     * Signature check is performed if the OpenIDRequestSource contains a
+     * pre-generated JWS
+     *
+     * @param RSAPublicKey $sigPubKey RP static signing key
+     *
+     * @return array|string scopes array or OpenIDRequestSource::CONTENT_IS_ENCRYPTED
+     */
+    public function getScopes(RSAPublicKey $sigPubKey);
 }

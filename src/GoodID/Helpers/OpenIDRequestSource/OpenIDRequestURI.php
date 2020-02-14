@@ -97,6 +97,23 @@ class OpenIDRequestURI implements OpenIDRequestSource
     }
 
     /**
+     * Returns the scopes as an array if they are not encrypted
+     *
+     * @param RSAPublicKey $sigPubKey RP static signing key
+     *
+     * @return array|string scopes array or OpenIDRequestSource::CONTENT_IS_ENCRYPTED
+     */
+    public function getScopes(RSAPublicKey $sigPubKey)
+    {
+        $res = $this->toArray($sigPubKey);
+        if ($res === self::CONTENT_IS_ENCRYPTED) {
+            return $res;
+        }
+
+        return isset($res['scope']) ? explode(' ', $res['scope']) : [];
+    }
+
+    /**
      * @codeCoverageIgnore
      *
      * @param string $requestUri

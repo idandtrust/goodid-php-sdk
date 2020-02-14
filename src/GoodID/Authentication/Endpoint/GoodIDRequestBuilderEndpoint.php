@@ -94,7 +94,7 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
         $queryParams = [
             'response_type' => OpenIDRequestObject::RESPONSE_TYPE_CODE,
             'client_id' => $this->clientId,
-            'scope' => OpenIDRequestObject::SCOPE_OPENID,
+            'scope' => implode(' ', $this->requestSource->getScopes($this->signingKey)),
             'state' => $this->stateNonceHandler->generateState(),
             'nonce' => $this->stateNonceHandler->generateNonce(),
             'ui_locales' => $uiLocales,
