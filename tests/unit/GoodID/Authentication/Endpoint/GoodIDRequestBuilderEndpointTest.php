@@ -275,6 +275,8 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $signingKey = $this->createMock(RSAPrivateKey::class);
         $encryptionKey = $this->createMock(RSAPrivateKey::class);
         $requestSource = $requestSource ?: $this->createMock(OpenIDRequestSource::class);
+        $requestSource->method('getScopes')
+            ->willReturn(array('openid'));
         $this->mockSessionDataHandler = $this->createMock(SessionDataHandlerInterface::class);
         $mockStateNonceHandler = $this->createMock(StateNonceHandler::class);
         $mockStateNonceHandler->method('generateNonce')->willReturn('mock-nonce-value');
