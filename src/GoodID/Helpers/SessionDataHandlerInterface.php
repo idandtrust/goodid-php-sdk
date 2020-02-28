@@ -56,6 +56,10 @@ interface SessionDataHandlerInterface
 
     const SESSION_KEY_GOODID_SESSION_ID = "goodidsessionid";
 
+    const SESSION_KEY_USER_JWK = "userJWK";
+
+    const SESSION_KEY_DEV_JWK = "devJWK";
+
     /**
      * Get a value from a persistent data store.
      *

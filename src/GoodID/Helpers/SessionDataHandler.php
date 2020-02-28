@@ -55,8 +55,6 @@ class SessionDataHandler implements SessionDataHandlerInterface
      * @param string $key Key
      *
      * @return mixed Value
-     *
-     * @throws GoodIDException
      */
     public function get($key)
     {
@@ -72,8 +70,6 @@ class SessionDataHandler implements SessionDataHandlerInterface
     /**
      * @param string $key Key
      * @param mixed $value Value
-     *
-     * @throws GoodIDException
      */
     public function set($key, $value)
     {
