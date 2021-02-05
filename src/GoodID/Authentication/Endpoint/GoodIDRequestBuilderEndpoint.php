@@ -119,7 +119,8 @@ class GoodIDRequestBuilderEndpoint extends AbstractGoodIDEndpoint
                 $this->clientId,
                 $this->redirectUri,
                 $this->goodIdServerConfig,
-                $this->maxAge
+                $this->maxAge,
+                $this->appResponseUri
             );
 
             $queryParams['request'] = $this->requestSource->generateFromArray(

@@ -117,6 +117,7 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * @param string $redirectUri Redirect URI
      * @param GoodIDServerConfig $goodIdServerConfig Configurations
      * @param int|null $maxAge Maximum authentication age
+     * @param string|null $appResponseUri
      *
      * @return array
      */
@@ -124,7 +125,8 @@ class OpenIDRequestObject implements OpenIDRequestSource
         $clientId,
         $redirectUri,
         GoodIDServerConfig $goodIdServerConfig,
-        $maxAge = null
+        $maxAge = null,
+        $appResponseUri = null
     ) {
         $array = [
             'iss' => $clientId,
@@ -141,6 +143,10 @@ class OpenIDRequestObject implements OpenIDRequestSource
                 throw new \InvalidArgumentException('max_age can not be negative');
             }
             $array['max_age'] = $maxAge;
+        }
+
+        if (!is_null($appResponseUri)) {
+            $array['app_response_uri'] = $appResponseUri;
         }
 
         return $array;

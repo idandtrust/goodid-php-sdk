@@ -416,7 +416,7 @@ class GoodIDResponse
     /**
      * Returns the user JWK of the GoodID user if the security level of the RP is high
      *
-     * @return string Device JWK
+     * @return array|null Device JWK
      *
      * @throws GoodIDException
      */
@@ -441,7 +441,7 @@ class GoodIDResponse
     /**
      * Returns the user JWK of the GoodID user if the security level of the RP is high
      *
-     * @return string User JWK
+     * @return array|null User JWK
      *
      * @throws GoodIDException
      */

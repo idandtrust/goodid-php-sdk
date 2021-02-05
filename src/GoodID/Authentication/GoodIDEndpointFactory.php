@@ -49,6 +49,7 @@ final class GoodIDEndpointFactory
      * @param IncomingRequest|null $incomingRequest Please set to null
      * @param int|null $maxAge Maximum accepted authentication age
      *    This value has no effect when an OpenIDRequestObjectJWT or an OpenIDRequestURI is used
+     * @param string|null $appResponseUri If request was initialised from a web view of a mobile app, set the urlschema to be open from GoodID.
      *
      * @return AbstractGoodIDEndpoint
      *
@@ -62,7 +63,8 @@ final class GoodIDEndpointFactory
         OpenIDRequestSource $requestSource,
         $redirectUri,
         IncomingRequest $incomingRequest = null,
-        $maxAge = null
+        $maxAge = null,
+        $appResponseUri = null
     ) {
         $goodIdServerConfig = $serviceLocator->getServerConfig();
 
@@ -80,7 +82,8 @@ final class GoodIDEndpointFactory
             $goodIdServerConfig,
             $sessionDataHandler,
             $stateNonceHandler,
-            $maxAge
+            $maxAge,
+            $appResponseUri
         );
     }
 }

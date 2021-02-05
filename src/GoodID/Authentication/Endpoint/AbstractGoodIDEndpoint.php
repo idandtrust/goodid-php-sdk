@@ -95,6 +95,12 @@ abstract class AbstractGoodIDEndpoint
     protected $goodidSessionProvider;
 
     /**
+     *
+     * @var string|null
+     */
+    protected $appResponseUri;
+
+    /**
      * For comments see GoodIDEndpointFactory
      *
      * @param IncomingRequest $incomingRequest
@@ -107,6 +113,7 @@ abstract class AbstractGoodIDEndpoint
      * @param SessionDataHandlerInterface $sessionDataHandler
      * @param StateNonceHandler $stateNonceHandler
      * @param int|null $maxAge
+     * @param string|null $appResponseUri
      */
     public function __construct(
         IncomingRequest $incomingRequest,
@@ -118,7 +125,8 @@ abstract class AbstractGoodIDEndpoint
         GoodIDServerConfig $goodIdServerConfig,
         SessionDataHandlerInterface $sessionDataHandler,
         StateNonceHandler $stateNonceHandler,
-        $maxAge
+        $maxAge,
+        $appResponseUri
     ) {
         if (empty($clientId)) {
             throw new GoodIDException('$clientId can not be empty');
@@ -138,6 +146,7 @@ abstract class AbstractGoodIDEndpoint
         $this->goodIdServerConfig = $goodIdServerConfig;
         $this->sessionDataHandler = $sessionDataHandler;
         $this->stateNonceHandler = $stateNonceHandler;
+        $this->appResponseUri = $appResponseUri;
     }
 
     public function setGoodidSessionProvider(GoodidSessionStoreInterface $goodidSessionProvider) {

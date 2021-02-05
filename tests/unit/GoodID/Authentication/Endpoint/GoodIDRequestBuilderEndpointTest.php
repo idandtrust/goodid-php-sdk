@@ -270,7 +270,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $ep->buildRequestUrl();
     }
 
-    private function buildEndpoint(IncomingRequest $request, OpenIDRequestSource $requestSource = null, $maxAge = null)
+    private function buildEndpoint(IncomingRequest $request, OpenIDRequestSource $requestSource = null, $maxAge = null, $appResponseUri = null)
     {
         $signingKey = $this->createMock(RSAPrivateKey::class);
         $encryptionKey = $this->createMock(RSAPrivateKey::class);
@@ -295,7 +295,8 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             $mockServerConfig,
             $this->mockSessionDataHandler,
             $mockStateNonceHandler,
-            $maxAge
+            $maxAge,
+            $appResponseUri
         );
     }
 
