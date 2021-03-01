@@ -78,11 +78,6 @@ class ServiceLocator
     private $passService;
 
     /**
-     * @var TokenExtractor
-     */
-    private $tokenExtractor;
-
-    /**
      * @var GoodidSessionStoreInterface|null
      */
     private $goodidSessionStore;

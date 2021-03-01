@@ -31,7 +31,7 @@ class OpenIDRequestObjectJWTTest extends \PHPUnit_Framework_TestCase
     {
         $request = new OpenIDRequestObjectJWT($this->jwe);
 
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $this->assertEquals(OpenIDRequestObjectJWT::CONTENT_IS_ENCRYPTED, $request->getClaims($key));
     }
 
@@ -41,7 +41,7 @@ class OpenIDRequestObjectJWTTest extends \PHPUnit_Framework_TestCase
     public function itExtractsClaimsFromJws()
     {
         $request = new OpenIDRequestObjectJWT($this->jws);
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $expectedClaims = [
             'userinfo' => [
@@ -60,7 +60,7 @@ class OpenIDRequestObjectJWTTest extends \PHPUnit_Framework_TestCase
     public function itFailsWhenJwtIsNotRecognised()
     {
         $request = new OpenIDRequestObjectJWT('invalid-jwt');
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $request->getClaims($key);
     }

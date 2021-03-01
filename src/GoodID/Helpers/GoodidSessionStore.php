@@ -42,11 +42,13 @@ class GoodidSessionStore implements GoodidSessionStoreInterface
     }
 
     /**
+     * @param int|null seconds
+     * 
      * @return GoodidSession
      */
-    public function createGoodidSession()
+    public function createGoodidSession($ttl = null)
     {
-        return new GoodidSession();
+        return new GoodidSession($ttl);
     }
 
     /**

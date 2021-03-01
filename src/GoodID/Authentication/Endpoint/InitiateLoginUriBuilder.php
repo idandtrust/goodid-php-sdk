@@ -22,49 +22,49 @@
  *
  */
 
-namespace GoodID\Helpers\Key;
+namespace GoodID\Authentication\Endpoint;
 
 use GoodID\Exception\GoodIDException;
-use Jose\Factory\JWSFactory;
 
 /**
- * RSAPrivateKey class
+ * This class is responsible to build the Authentication Request
+ *
+ * @link http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest Authentication Request
  */
-class RSAPrivateKey extends RSAPublicKey
+class InitiateLoginUriBuilder extends AbstractInitiateLoginUriBuilder
 {
     /**
-     * Private exponent JWK parameter
-     */
-    const JWK_PARAM_PRIVATE_EXPONENT = "d";
-
-    /**
-     * RSAPrivateKey constructor
+     * Builds the authentication request URI used at normal sign-ins
      *
-     * @param string|array $key PEM string or JWK array
-     * @param array Additional key parameters.
+     * @return string
+     *
+     * @throws GoodIDException
      */
-    public function __construct($key, array $values = array())
+    public function buildRequestUrl()
     {
-        parent::__construct($key, $values);
+        $this->sessionDataHandler->removeAll();
+        $queryParams = $this->buildQueryParams();
+        $this->setSessionData();
+        $this->saveGoodIDSession();
 
-        if (!$this->jwk->has(self::JWK_PARAM_PRIVATE_EXPONENT)) {
-            throw new GoodIDException("This is not a private key.");
-        }
+        return $this->goodIdServerConfig->getAuthorizationEndpointUri() . '?' . http_build_query($queryParams);
     }
 
     /**
-     * Signs and encodes the given array as the payload of a compact JWS
-     *
-     * @param array $payload Payload
-     *
-     * @return string Compact JWS
+     * @return array
      */
-    public function signAsCompactJws(array $payload)
+    public function getClaims()
     {
-        $jsonString = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        return JWSFactory::createJWSToCompactJSON($jsonString, $this->jwk, [
-            self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
-            self::KEY_ID => $this->getKid()
-        ]);
+        return $this->requestSource->getClaims($this->signingKey);
+    }
+
+    /**
+     * The main logic of this endpoint
+     *
+     * @codeCoverageIgnore
+     */
+    public function run()
+    {
+        header('Location: ' . $this->buildRequestUrl());
     }
 }

@@ -28,9 +28,9 @@ use GoodID\Exception\GoodIDException;
 use Jose\Factory\JWSFactory;
 
 /**
- * RSAPrivateKey class
+ * ECPrivateKey class
  */
-class RSAPrivateKey extends RSAPublicKey
+class ECPrivateKey extends ECPublicKey
 {
     /**
      * Private exponent JWK parameter
@@ -55,15 +55,18 @@ class RSAPrivateKey extends RSAPublicKey
     /**
      * Signs and encodes the given array as the payload of a compact JWS
      *
-     * @param array $payload Payload
+     * @param mixed $payload Payload
      *
      * @return string Compact JWS
      */
-    public function signAsCompactJws(array $payload)
+    public function signAsCompactJws($payload)
     {
-        $jsonString = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        return JWSFactory::createJWSToCompactJSON($jsonString, $this->jwk, [
-            self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
+        if (is_array($payload)) {
+            $payload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+
+        return JWSFactory::createJWSToCompactJSON($payload, $this->jwk, [
+            self::SIG_ALG_KEY => self::SIG_ALG_VALUE_ES256,
             self::KEY_ID => $this->getKid()
         ]);
     }

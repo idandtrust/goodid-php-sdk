@@ -34,16 +34,28 @@ final class GoodidSession implements \JsonSerializable
     private $id;
 
     /**
+     * @var int
+     */
+    private $iat;
+
+    /**
+     * @var int 
+     */
+    private $ttl;
+
+    /**
      * @var array
      */
     private $data = [];
 
     /**
-     * @param string $id
+     * @param int $ttl
      */
-    public function __construct()
+    public function __construct($ttl = null)
     {
         $this->id = Base64Url::encode(random_bytes(32), false);
+        $this->iat = time();
+        $this->ttl = !is_null($ttl) ? $ttl : 1200;
     }
 
     /**
@@ -60,6 +72,38 @@ final class GoodidSession implements \JsonSerializable
     private function setId($id)
     {
         $this->id = $id;
+    }
+
+    /**
+     * @param int $ttl
+     */
+    private function setTtl($ttl)
+    {
+        $this->ttl = (int)$ttl;
+    }
+
+    /**
+     * @param int $iat
+     */
+    private function setIat($iat)
+    {
+        $this->iat = (int)$iat;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getIat()
+    {
+        return \DateTime::createFromFormat('U', $this->iat);
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getTtl()
+    {
+        return \DateTime::createFromFormat('U', $this->iat + $this->ttl);
     }
 
     /**
@@ -82,12 +126,22 @@ final class GoodidSession implements \JsonSerializable
     }
 
     /**
+     * @param string $key
+     */
+    public function remove($key)
+    {
+        unset($this->data[$key]);
+    }
+
+    /**
      * @return array
      */
     public function jsonSerialize()
     {
         return [
             'id' => $this->id,
+            'iat' => $this->iat,
+            'ttl' => $this->ttl,
             'data' => $this->data,
         ];
     }
@@ -103,7 +157,11 @@ final class GoodidSession implements \JsonSerializable
         if (!is_array($data)) {
             throw new \InvalidArgumentException('Malformed serialized goodid session');
         }
-        if (count($data) !== 2 || !array_key_exists('id', $data) || !array_key_exists('data', $data)) {
+        if (count($data) !== 4
+            || !array_key_exists('id', $data)
+            || !array_key_exists('data', $data)
+            || !array_key_exists('iat', $data)
+            || !array_key_exists('ttl', $data)) {
             throw new \InvalidArgumentException('Malformed serialized goodid session');
         }
         if (!is_string($data['id']) || !is_array($data['data'])) {
@@ -112,6 +170,8 @@ final class GoodidSession implements \JsonSerializable
 
         $session = new GoodidSession();
         $session->setId($data['id']);
+        $session->setIat($data['iat']);
+        $session->setTtl($data['ttl']);
         foreach ($data['data'] as $k => $v) {
             $session->set($k, $v);
         }

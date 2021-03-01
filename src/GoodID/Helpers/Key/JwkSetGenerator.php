@@ -23,83 +23,70 @@
  */
 namespace GoodID\Helpers\Key;
 use GoodID\Exception\GoodIDException;
-use GoodID\Helpers\Http\HttpRequest;
-use GoodID\Helpers\Http\HttpResponse;
 use GoodID\Helpers\Key\RSAPublicKey;
 /**
  * JwkSetGenerator class
  */
 class JwkSetGenerator
 {
+    private $keys = [];
+
     /**
-     * Generate JWKS URI content
-     *
-     * @param RSAPublicKey $sigKey Service provider signing key
-     * @param RSAPublicKey $encKey Service provider encryption key
-     * @param string|null $existingJwksUri The existing JWKS URI of the Service Provider.
-     *     If $existingJwksUri is set, the returned content will include the keys from the existing JWKS URI too.
-     * @return string JWKS-URI content (JWK Set in JSON format)
+     * @param KeyInterface $key
      */
-    public function generateJwksUriContent(RSAPublicKey $sigKey, RSAPublicKey $encKey, $existingJwksUri = null)
+    public function addKey(KeyInterface $key)
     {
-        if (!is_null($existingJwksUri)) {
-            $httpResponse = $this->callEndpoint($existingJwksUri);
-            if ($httpResponse->getHttpStatusCode() !== HttpResponse::HTTP_STATUS_CODE_OK) {
-                throw new GoodIDException(
-                    'Existing JWKS URI returned '
-                    . $httpResponse->getHttpStatusCode()
-                    . ", "
-                    . $httpResponse->getBody());
-            }
-            $responseBody = $httpResponse->getBody();
-            $jwkSet = json_decode($responseBody, true);
-            if (!$jwkSet || !is_array($jwkSet) || !array_key_exists('keys', $jwkSet) || !is_array($jwkSet['keys'])) {
-                throw new GoodIDException('Format of existing JWKS URI content is invalid');
-            }
-        } else {
-            $jwkSet = [
-                'keys' => []
-            ];
-        }
-        $existingKids = [
-            'enc' => [],
-            'sig' => [],
-        ];
-        foreach ($jwkSet['keys'] as $key) {
-            if (!isset($key['kid']) || !isset($key['use']) || !in_array($key['use'], ['enc', 'sig'])) {
-                throw new GoodIDException('Format of existing JWKS URI content is invalid');
-            }
-            if (isset($existingKids[$key['use']][$key['kid']])) {
-                throw new GoodIDException('Duplicate use-kid pair in existing JWKS URI content');
-            }
-            $existingKids[$key['use']][$key['kid']] = true;
-        }
-        $sigJwk = $sigKey->getPublicKeyAsJwkArray();
-        $sigJwk['use'] = 'sig';
-        $sigJwk['kid'] = $sigKey->getKid();
-        if (isset($existingKids[$sigJwk['use']][$sigJwk['kid']])) {
-            throw new GoodIDException('Result would contain a duplicate use-kid pair');
-        }
-        array_push($jwkSet['keys'], $sigJwk);
-        $encJwk = $encKey->getPublicKeyAsJwkArray();
-        $encJwk['use'] = 'enc';
-        $encJwk['kid']  = $encKey->getKid();
-        if (isset($existingKids[$encJwk['use']][$encJwk['kid']])) {
-            throw new GoodIDException('Result would contain a duplicate use-kid pair');
-        }
-        array_push($jwkSet['keys'], $encJwk);
-        return json_encode($jwkSet);
+        $this->keys[] = $key;
     }
+
     /**
-     * Call Endpoint
-     *
-     * @codeCoverageIgnore
-     *
-     * @param string $endpointURI Endpoint URI
-     * @return HttpResponse Response
+     * @return string
+     * 
+     * @throws GoodIDException
+     * @throws \Exception
      */
-    protected function callEndpoint($endpointURI)
+    public function generate()
     {
-        return (new HttpRequest($endpointURI))->get();
+        $jwks = [
+            'keys' => []
+        ];
+
+        $existingKids = [
+            'sig' => [],
+            'enc' => []
+        ];
+
+        $requestSigKey = null;
+        $requestEncKey = null;
+
+        foreach ($this->keys as $key) {
+            $keyArray = $key->getPublicKeyAsJwkArray();
+            if (isset($existingKids[$keyArray['use']][$keyArray['kid']])) {
+                throw new GoodIDException('Duplicate use-kid pair!');
+            }
+
+            $existingKids[$keyArray['use']][$keyArray['kid']] = true;
+            array_push($jwks['keys'], $keyArray);
+
+            if ($key instanceof RSAPublicKey && $keyArray['use'] == 'sig') {
+                $requestSigKey = $key;
+            } else if ($key instanceof RSAPublicKey && $keyArray['use'] == 'enc') {
+                $requestEncKey = $key;
+            }
+        }
+
+        if (is_null($requestEncKey) || is_null($requestSigKey)) {
+            throw new GoodIDException('Missing required keys.');
+        }
+
+        return json_encode($jwks);
+    }
+
+    public function run()
+    {
+        $jwksContent = $this->generate();
+        header("Content-type:application/jwk-set+json");
+        echo $jwksContent;
+        exit;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace GoodID\Authentication;
 
-use GoodID\Authentication\Endpoint\GoodIDRequestBuilderEndpoint;
+use GoodID\Authentication\Endpoint\InitiateLoginUriBuilder;
 use GoodID\Helpers\Acr;
 use GoodID\Helpers\GoodIDServerConfig;
 use GoodID\Helpers\Key\RSAPrivateKey;
@@ -12,6 +12,7 @@ use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\SecurityLevel;
 use GoodID\ServiceLocator;
+use GoodID\Helpers\GoodIDPartnerConfig;
 
 class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
 {
@@ -29,17 +30,16 @@ class GoodIDEndpointFactoryTest extends \PHPUnit_Framework_TestCase
         $serviceLocator->method('getStateNonceHandler')
             ->willReturn($this->createMock(StateNonceHandler::class));
 
-        $endpoint = GoodIDEndpointFactory::createGoodIDEndpoint(
+        $goodidPartnerConfig = new GoodIDPartnerConfig('some-client-id', 'some-client-secret', $this->createMock(RSAPrivateKey::class), $this->createMock(RSAPrivateKey::class));
+        $endpoint = GoodIDEndpointFactory::createInitiateLoginEndpoint(
             $serviceLocator,
-            'some-client-id',
-            $this->createMock(RSAPrivateKey::class),
-            $this->createMock(RSAPrivateKey::class),
+            $goodidPartnerConfig,
             $this->createMock(OpenIDRequestSource::class),
             'https://some.redirect.uri',
             $this->createMock(IncomingRequest::class),
             0
         );
-        $this->assertInstanceOf(GoodIDRequestBuilderEndpoint::class, $endpoint);
+        $this->assertInstanceOf(InitiateLoginUriBuilder::class, $endpoint);
     }
 
 }

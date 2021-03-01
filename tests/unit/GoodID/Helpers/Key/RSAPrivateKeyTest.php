@@ -10,7 +10,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanBeCreatedFromPem()
     {
-        $key = new RSAPrivateKey($this->privateKey);
+        $key = new RSAPrivateKey($this->privateKey, array('use' => 'sig', 'kid' => 'test'));
         $this->assertInstanceOf(RSAPrivateKey::class, $key);
     }
 
@@ -21,7 +21,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsWhenProvidedWithPublicKey()
     {
-        new RSAPrivateKey($this->publicKey);
+        new RSAPrivateKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
     }
 
     /**
@@ -30,7 +30,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanSignPayload()
     {
-        $key = new RSAPrivateKey($this->privateKey);
+        $key = new RSAPrivateKey($this->privateKey, array('use' => 'sig', 'kid' => 'test'));
         $payload = ['iss' => 'https://jwt-idp.example.com'];
         $this->assertEquals($this->jws, $key->signAsCompactJws($payload));
     }
@@ -41,7 +41,7 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanGetThePublicKeyAsJwkArray()
     {
-        $privateKey = new RSAPrivateKey($this->privateKey);
+        $privateKey = new RSAPrivateKey($this->privateKey, array('use' => 'sig', 'kid' => 'test'));
         $this->assertEquals($this->publicKeyJwkArray, $privateKey->getPublicKeyAsJwkArray());
     }
 
@@ -51,8 +51,8 @@ class RSAPrivateKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanGetTheKeyId()
     {
-        $privateKey = new RSAPrivateKey($this->privateKey);
-        $this->assertEquals('Fpa_c', $privateKey->getKid());
+        $privateKey = new RSAPrivateKey($this->privateKey, array('use' => 'sig', 'kid' => 'test'));
+        $this->assertEquals('test', $privateKey->getKid());
     }
 
     private $publicKey = '
@@ -98,8 +98,11 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
     private $publicKeyJwkArray = [
         'kty' => 'RSA',
         'n' => 'v5pUbc0tbzU6GCB0_ja-UTCx9AFqNsKjS_nqKzzHbpXF__XbONjkYV7xQfV4D_a-FbAvQqJidR8P3ndb2zfZ3xuZDd6hzHBMf3GtQldDS2y1_JPhdKLG5_rbjOke9b8mR_zqq8fo-GK0njffAEIQy4P5J50ANFx-8X6UulNUQ_AU_qEsDQnmyxvmasgQhKeNHnwKmMYcYblpj5sLA9-mPfSDrvvGK9_O7wuwrrY73gir9z0aw3URwkYjzibuw71kcxRpp3A9GpQqfw9kDt--MU9lBho5InNZdMI4K6attCMQCePR869AaQ4LHx7NVZM0tp0284Ry4IWQQqQKKEv3WQ',
-        'e' => 'AQAB'
+        'e' => 'AQAB',
+        'use' => 'sig',
+        'kid' => 'test',
+        'alg' => 'RS256'
     ];
 
-    private $jws = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJodHRwczovL2p3dC1pZHAuZXhhbXBsZS5jb20ifQ.bF9Et2YNPBYk8BtqI1RaEWX6dXtkbhZX0EOMW1Nd3JecOPh3Py8FevXuOHMP0v4BQYfRCAVM2V9VGXCojvfahpkul2kgGrZNql6fsQaWf0bYPkyBBZekl9zvpgSu_qA4u2WMTBQLZy2q6oU-Ke7uIDofrct0CcxN5YTwHT_QL5RgYJAyiPUDOWmYyZZpU_9vQ9SGDCNQ-YYCAk-griJaM3NThXrRepP15GbnAsi5NCiIaWoxDfAVjYji0r6yeoewtBLH1g3vwCo7Zv7760746I-eDSQ4IefXIoo191Fmxu_g17b-S_E__mPCM--6eE4bu4yAqT6W8GacwGdzePMibg';
+    private $jws = 'eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3QifQ.eyJpc3MiOiJodHRwczovL2p3dC1pZHAuZXhhbXBsZS5jb20ifQ.oK7saXJQi_wSmdsjHEy0VijIW01AJCN6WWLLAn1nERQRfbqXbqFoAbK72myIBgyTGdRxd1jxp6jgemu4yBLG-jxdL5ylin3WvE3iQ-DRI3ussakH2hjQeQU8uOdIvZJ6WZmrBozfUVftGwWKLKlSGmtWZwy0RRwhtsVhEjIf4DIJrxs71tCo5cxD1eP4BAe51qaiJJjw8_8uAt36FrDSZDzqCofjArqYoHIhSlexblVic3i6Bg4XRhOUxKogvK-68neJj6o4s8wkM--2UgaQAe46OLc5l2gI4TLCFuuvOVBM1Spy1DUblehl6kRyZfYil_75qWoR5nARx-ZV_qYxcg';
 }

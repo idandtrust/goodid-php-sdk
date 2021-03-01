@@ -27,16 +27,16 @@ namespace GoodID\Helpers\Key;
 use Base64Url\Base64Url;
 use GoodID\Exception\GoodIDException;
 use Jose\Factory\JWKFactory;
-use Jose\KeyConverter\RSAKey as SpomkyRSAKey;
+use Jose\KeyConverter\ECKey as SpomkyECKey;
 use Jose\Loader;
 use Jose\Object\JWK;
 use Jose\Object\JWKInterface;
 
 /**
- * An RSA key class with sign/verify and encrypt/decrypt capabilities in the JWS/JWE format.
+ * An EC key class with sign/verify and encrypt/decrypt capabilities in the JWS/JWE format.
  * It can act as either a private or public key based on the parameters that it is initialized with.
  */
-class RSAPublicKey implements KeyInterface
+class ECPublicKey implements KeyInterface
 {
     /**
      * Signature algorithm parameter name
@@ -45,9 +45,8 @@ class RSAPublicKey implements KeyInterface
 
     /**
      * Signature algorithm:
-     * RSASSA-PKCS1-v1_5 using SHA-256
      */
-    const SIG_ALG_VALUE_RS256 = "RS256";
+    const SIG_ALG_VALUE_ES256 = "ES256";
 
     /**
      * Key Identifier param.
@@ -65,24 +64,29 @@ class RSAPublicKey implements KeyInterface
     protected $private;
 
     /**
-     * RSAPublicKey constructor
+     * ECPublicKey constructor
      *
      * @param string|array $key PEM string or JWK array
      * @param array Additional key parameters.
      */
     public function __construct($key, array $values = array())
     {
-        $spomkyRsaKey = new SpomkyRSAKey($key);
-        $values = array_merge($spomkyRsaKey->toArray(), $values);
+        $spomkyECKey = new SpomkyECKey($key);
+
+        $values = array_merge($spomkyECKey->toArray(), $values);
 
         if (!isset($values['kid']) || !isset($values['use'])) {
             throw new \Exception('Missing required key attributes: kid, use');
         }
 
-        $values['alg'] = ($values['use'] == 'sig') ? self::SIG_ALG_VALUE_RS256 : 'RSA-OAEP';
+        if ($values['use'] !== 'sig') {
+            throw new \Exception('EC key for encryption is currently not supported.');
+        }
+
+        $values['alg'] = self::SIG_ALG_VALUE_ES256;
 
         $this->jwk = new JWK($values);
-        $this->private = $spomkyRsaKey->isPrivate();
+        $this->private = $spomkyECKey->isPrivate();
     }
 
     /**
@@ -102,7 +106,7 @@ class RSAPublicKey implements KeyInterface
             return $loader->loadAndVerifySignatureUsingKey(
                 $compactJws,
                 $this->jwk,
-                [self::SIG_ALG_VALUE_RS256]
+                [self::SIG_ALG_VALUE_ES256]
             )->getPayload();
         } catch (\Exception $e) {
             throw new GoodIDException("Can not verify signature: " . $e->getMessage());
@@ -125,8 +129,7 @@ class RSAPublicKey implements KeyInterface
      */
     public function getKid()
     {
-        $values = $this->jwk->getAll();
-        return $values['kid'];
+        return $this->jwk->get('kid');
     }
 
     /**

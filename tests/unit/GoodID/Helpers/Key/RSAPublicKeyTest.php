@@ -11,7 +11,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanBeCreatedFromPem()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $this->assertInstanceOf(RSAPublicKey::class, $key);
     }
 
@@ -20,7 +20,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanVerifySignatures()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $expected = ['iss' => 'https://jwt-idp.example.com'];
         $payload = $key->verifyCompactJws($this->jws);
@@ -34,7 +34,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsWhenPayloadIsEmpty()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $key->verifyCompactJws($this->jwsEmptyPayload);
     }
 
@@ -45,7 +45,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itFailsWhenSignatureIsWrong()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $key->verifyCompactJws($this->jwsDifferentSignature);
     }
 
@@ -54,7 +54,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanGetThePublicKeyAsJwkArray()
     {
-        $publicKey = new RSAPublicKey($this->publicKey);
+        $publicKey = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $this->assertEquals($this->publicKeyJwkArray, $publicKey->getPublicKeyAsJwkArray());
     }
 
@@ -63,8 +63,8 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanGetTheKeyId()
     {
-        $publicKey = new RSAPublicKey($this->publicKey);
-        $this->assertEquals('Fpa_c', $publicKey->getKid());
+        $publicKey = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
+        $this->assertEquals('test', $publicKey->getKid());
     }
 
     /**
@@ -72,7 +72,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
      */
     public function itCanBeConvertedToSpomkyKey()
     {
-        $publicKey = new RSAPublicKey($this->publicKey);
+        $publicKey = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $spomkyKey = $publicKey->asSpomkyKey();
 
         $this->assertInstanceOf(JWKInterface::class, $spomkyKey);
@@ -122,7 +122,10 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
     private $publicKeyJwkArray = [
         'kty' => 'RSA',
         'n' => 'v5pUbc0tbzU6GCB0_ja-UTCx9AFqNsKjS_nqKzzHbpXF__XbONjkYV7xQfV4D_a-FbAvQqJidR8P3ndb2zfZ3xuZDd6hzHBMf3GtQldDS2y1_JPhdKLG5_rbjOke9b8mR_zqq8fo-GK0njffAEIQy4P5J50ANFx-8X6UulNUQ_AU_qEsDQnmyxvmasgQhKeNHnwKmMYcYblpj5sLA9-mPfSDrvvGK9_O7wuwrrY73gir9z0aw3URwkYjzibuw71kcxRpp3A9GpQqfw9kDt--MU9lBho5InNZdMI4K6attCMQCePR869AaQ4LHx7NVZM0tp0284Ry4IWQQqQKKEv3WQ',
-        'e' => 'AQAB'
+        'e' => 'AQAB',
+        'use' => 'sig',
+        'kid' => 'test',
+        'alg' => 'RS256'
     ];
 
     private $jws = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2p3dC1pZHAuZXhhbXBsZS5jb20ifQ.QcG85FlQo2_y0fAVTpggGlyahk-WoyuhJVl3I3VUnXBbEk2aJgnMqCx0kLLEDfwzNsgUtHrFACfXBaep0cu99qpOQ-4QbLWzNgaoH7s2a91vbqYcuI31b9j_S_SMeki1La92XSg2npALq782mYZgyxu497Ez_bXkq42NW97RaiKmpuChxM_PSgQdRADFOjeeEdRua_DBdDT_7un4AsT5fM_0kc9cQmJPMsX8j1yq-ULgIN3lQZ9qQiO2R8wo86FFMH8FA1yHPOX4-LzQyJObFqpczFGbbvLAiOn98xxjw5n2VpmpoVnDAMj3taQ88mpU69tKY3gnerXkm5qwHnw_kw';
