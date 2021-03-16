@@ -51,7 +51,6 @@ class IssuerChecker implements ClaimChecker, GoodIDClaimChecker
      */
     public function checkClaim($claims): void
     {
-        var_dump($claims); exit;
         if (!isset($claims['iss'])) {
             throw new \InvalidArgumentException('Missing issuer');
         }
