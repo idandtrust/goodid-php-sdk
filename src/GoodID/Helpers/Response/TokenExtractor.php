@@ -24,41 +24,49 @@
 
 namespace GoodID\Helpers\Response;
 
-use Jose\Decrypter;
-use Jose\Factory\JWSFactory;
-use Jose\Loader;
-use Jose\LoaderInterface;
-use Jose\Object\JWEInterface;
-use Jose\Object\JWK;
-use Jose\Object\JWKSetInterface;
-use Jose\Object\JWSInterface;
-use Jose\Util\JWELoader;
-use Jose\Util\JWSLoader;
-use Jose\Verifier;
+use Jose\Component\Encryption\JWE;
+use Jose\Component\Core\JWKSet;
+use Jose\Component\Signature\JWS;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Encryption\Algorithm\KeyEncryption\RSAOAEP;
+use Jose\Component\Encryption\Algorithm\ContentEncryption\A128CBCHS256;
+use Jose\Component\Encryption\Algorithm\ContentEncryption\A256CBCHS512;
+use Jose\Component\Encryption\Compression\CompressionMethodManager;
+use Jose\Component\Encryption\Compression\Deflate;
+use Jose\Component\Encryption\JWEDecrypter;
+use Jose\Component\Encryption\Serializer\CompactSerializer as JWECompactSerializer;
+use Jose\Component\Encryption\Serializer\JWESerializerManager;
+use Jose\Component\Checker\HeaderCheckerManager;
+use Jose\Component\Checker\AlgorithmChecker;
+use Jose\Component\Signature\JWSVerifier;
+use Jose\Component\Signature\Algorithm\RS256;
+use Jose\Component\Signature\Algorithm\ES256;
+use Jose\Component\Signature\Algorithm\HS512;
+use Jose\Component\Signature\Serializer\CompactSerializer as JWSCompactSerializer;
+use Jose\Component\Signature\JWSTokenSupport;
+use Jose\Component\Core\Util\JsonConverter;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Core\JWK;
+use Jose\Component\KeyManagement\JWKFactory;
 
 class TokenExtractor
 {
     /**
-     * @var LoaderInterface
-     */
-    private $loader;
-    /**
-     * @var JWKSetInterface
+     * @var JWKSet
      */
     private $rpKeys;
     /**
-     * @var JWKSetInterface
+     * @var JWKSet
      */
     private $serverKeys;
 
     /**
      * TokenExtractor constructor.
-     * @param JWKSetInterface $rpKeys
-     * @param JWKSetInterface $serverKeys
+     * @param JWKSet $rpKeys
+     * @param JWKSet $serverKeys
      */
-    public function __construct(JWKSetInterface $rpKeys, JWKSetInterface $serverKeys)
+    public function __construct(JWKSet $rpKeys, JWKSet $serverKeys)
     {
-        $this->loader = new Loader();
         $this->rpKeys = $rpKeys;
         $this->serverKeys = $serverKeys;
     }
@@ -66,45 +74,38 @@ class TokenExtractor
     /**
      * @param string $compactJwt
      *
-     * @return JWSInterface
+     * @return JWS
      */
-    public function extractToken($compactJwt)
+    public function extractIDToken($compactJwt)
     {
         $tokenParts = explode('.', $compactJwt);
         switch (count($tokenParts)) {
             case 3:
                 try {
-                    $jws = JWSLoader::loadSerializedJsonJWS([
-                        'payload' => $tokenParts[1],
-                        'signatures' => [
-                            [
-                                'protected' => $tokenParts[0],
-                                'signature' => $tokenParts[2],
-                            ]
-                        ]
-                    ]);
-                } catch (\Throwable $t) {
+                    $serializer = new JWSCompactSerializer();
+
+                    $jws = $serializer->unserialize($compactJwt);
+                }
+                catch (\Throwable $t) {
                     throw new \InvalidArgumentException('Unable to decode JWS', 0, $t);
                 }
                 $this->verifyJws($jws);
                 break;
             case 5:
                 try {
-                    $jwe = JWELoader::loadSerializedJsonJWE([
-                        'protected' => $tokenParts[0],
-                        'recipients' => [
-                            [
-                                'encrypted_key' => $tokenParts[1]
-                            ]
-                        ],
-                        'iv' => $tokenParts[2],
-                        'ciphertext' => $tokenParts[3],
-                        'tag' => $tokenParts[4]
+                    $serializerManager = new JWESerializerManager([
+                        new JWECompactSerializer(),
                     ]);
+
+                    $jwe = $this->decryptJwe($serializerManager->unserialize($compactJwt));
                 } catch (\Throwable $ex) {
                     throw new \InvalidArgumentException('Unable to decode JWE');
                 }
-                $jws = $this->decryptJwe($jwe);
+
+                $serializer = new JWSCompactSerializer();
+                $jws = $serializer->unserialize($jwe->getPayload());
+
+                $this->verifyJws($jws);
                 break;
             default:
                 throw new \InvalidArgumentException('Unsupported input');
@@ -113,54 +114,87 @@ class TokenExtractor
         return $jws;
     }
 
-    private function verifyJws(JWSInterface &$jws)
+    /**
+     * @param string $compactJwt
+     *
+     * @return JWE
+     */
+    public function extractUserinfo($compactJwt)
     {
-        $verifier = new Verifier(['RS256', 'ES256']);
-        $verifier->verifyWithKeySet($jws, $this->serverKeys);
+        try {
+            $serializerManager = new JWESerializerManager([
+                new JWECompactSerializer(),
+            ]);
+
+            return $this->decryptJwe($serializerManager->unserialize($compactJwt));
+        } catch (\Throwable $ex) {
+            throw new \InvalidArgumentException('Unable to decode JWE');
+        }
+    }
+
+    private function verifyJws(JWS &$jws)
+    {
+        $headerChecker = new HeaderCheckerManager(
+            [new AlgorithmChecker(['RS256', 'ES256'])], // A list of header checkers
+            [new JWSTokenSupport()]            // A list of token support services (we only use the JWS token type here)
+        );
+
+        $algorithmManager = new AlgorithmManager([
+            new RS256(), new ES256()
+        ]);
+        $jwsVerifier = new JWSVerifier($algorithmManager);
+
+        // We check all signatures
+        $isVerified = false;
+        for ($i = 0; $i < $jws->countSignatures(); $i++) {
+            try {
+                $headerChecker->check($jws, 0); // We check the header of the first (index=0) signature.        
+                if ($jwsVerifier->verifyWithKeySet($jws, $this->serverKeys, 0)) { // We verify the signature
+                    $isVerified = true;
+                    break;
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        if (!$isVerified) {
+            throw new GoodIDException("Can not verify signature: " . $e->getMessage());
+        }
     }
 
     /**
-     * @param JWEInterface $jwe
+     * @param JWE $jwe
      *
-     * @return JWSInterface
+     * @return JWE
      */
-    private function decryptJwe(JWEInterface &$jwe)
+    private function decryptJwe(JWE $jwe)
     {
-        $decrypter = new Decrypter(['RSA-OAEP'], ['A128CBC-HS256', 'A256CBC-HS512'], ['DEF', 'ZLIB', 'GZ']);
-        $decrypter->decryptUsingKeySet($jwe, $this->rpKeys);
+        $keyEncryptionAlgorithmManager = new AlgorithmManager([
+            new RSAOAEP(),
+        ]);
 
-        $payload = $jwe->getPayload();
-        if (is_array($payload)) {
-            $jws = JWSFactory::createJWS($payload);
-            $jws = $jws->addSignatureInformation(
-                new JWK(['kty' => 'none']),
-                [
-                    'alg' => 'HS512'
-                ]
-            );
-            return $jws;
+        $contentEncryptionAlgorithmManager = new AlgorithmManager([
+            new A128CBCHS256(),
+            new A256CBCHS512(),
+        ]);
+
+        // @TODO originally the following was supported by us before jose upgrade:
+        // 'DEF', 'ZLIB', 'GZ'
+        $compressionMethodManager = new CompressionMethodManager([
+            new Deflate(),
+        ]);
+
+        $jweDecrypter = new JWEDecrypter(
+            $keyEncryptionAlgorithmManager,
+            $contentEncryptionAlgorithmManager,
+            $compressionMethodManager
+        );
+
+        if (!$jweDecrypter->decryptUsingKeySet($jwe, $this->rpKeys, 0)) {
+            throw new \Exception('Unable to decode JWE');
         }
 
-        $jwsParts = explode('.', $payload);
-        if (count($jwsParts) !== 3) {
-            throw new \InvalidArgumentException('The token does not seem to contain a JWS');
-        }
-
-        try {
-            $jws = JWSLoader::loadSerializedJsonJWS([
-                'payload' => $jwsParts[1],
-                'signatures' => [
-                    [
-                        'protected' => $jwsParts[0],
-                        'signature' => $jwsParts[2],
-                    ]
-                ]
-            ]);
-        } catch (\Throwable $t) {
-            throw new \InvalidArgumentException('Unable to decode JWS', 0, $t);
-        }
-
-        $this->verifyJws($jws);
-        return $jws;
+        return $jwe;
     }
 }

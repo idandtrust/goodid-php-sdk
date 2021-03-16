@@ -19,9 +19,8 @@ use GoodID\Helpers\StateNonceHandler;
 use GoodID\ServiceLocator;
 use GoodID\Testing\MockIncomingRequest;
 use Jose\Factory\JWSFactory;
-use Jose\Object\JWK;
-use Jose\Object\JWKSet;
-use Jose\Object\JWKSetInterface;
+use Jose\Component\Core\JWK;
+use Jose\Component\Core\JWKSet;
 use GoodID\Helpers\GoodIDPartnerConfig;
 
 class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
@@ -643,7 +642,7 @@ class GoodIDResponseTest extends \PHPUnit_Framework_TestCase
             ;
         $goodIDPartnerConfig
                 ->method('getEncryptionKeySet')
-                ->willReturn($this->createMock(JWKSetInterface::class))
+                ->willReturn($this->createMock(JWKSet::class))
             ;
 
         return GoodIDEndpointFactory::getResponse(

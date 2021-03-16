@@ -36,8 +36,8 @@ use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodIDPass\GoodidPassService;
 use GoodIDPass\PassApi\CurlPassApi;
-use Jose\Object\JWKSetInterface;
-use Jose\Object\JWSInterface;
+use Jose\Component\Core\JWKSet;
+use Jose\Component\Signature\JWS;
 
 /**
  * Utility class
@@ -242,11 +242,11 @@ class ServiceLocator
     }
 
     /**
-     * @param JWKSetInterface $rpKeys
+     * @param JWKSet $rpKeys
      *
      * @return TokenExtractor
      */
-    public function getTokenExtractor(JWKSetInterface $rpKeys)
+    public function getTokenExtractor(JWKSet $rpKeys)
     {
         try {
             $serverKeys = $this->getServerConfig()->getKeystore();
@@ -280,11 +280,11 @@ class ServiceLocator
 
     /**
      * @param string $securityLevel
-     * @param JWSInterface $idToken
+     * @param JWS $idToken
      *
      * @return UserinfoVerifier
      */
-    public function getUserinfoVerifier($securityLevel, JWSInterface $idToken)
+    public function getUserinfoVerifier($securityLevel, JWS $idToken)
     {
         return new UserinfoVerifier($securityLevel, $idToken);
     }

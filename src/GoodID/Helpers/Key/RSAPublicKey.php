@@ -24,13 +24,17 @@
 
 namespace GoodID\Helpers\Key;
 
-use Base64Url\Base64Url;
 use GoodID\Exception\GoodIDException;
-use Jose\Factory\JWKFactory;
-use Jose\KeyConverter\RSAKey as SpomkyRSAKey;
-use Jose\Loader;
-use Jose\Object\JWK;
-use Jose\Object\JWKInterface;
+use Jose\Component\KeyManagement\KeyConverter\RSAKey;
+use Jose\Component\Core\JWK;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Checker\HeaderCheckerManager;
+use Jose\Component\Checker\AlgorithmChecker;
+use Jose\Component\Signature\JWSVerifier;
+use Jose\Component\Signature\Algorithm\RS256;
+use Jose\Component\Signature\Serializer\CompactSerializer;
+use Jose\Component\Signature\JWSTokenSupport;
+use Jose\Component\Core\Util\JsonConverter;
 
 /**
  * An RSA key class with sign/verify and encrypt/decrypt capabilities in the JWS/JWE format.
@@ -72,41 +76,108 @@ class RSAPublicKey implements KeyInterface
      */
     public function __construct($key, array $values = array())
     {
-        $spomkyRsaKey = new SpomkyRSAKey($key);
-        $values = array_merge($spomkyRsaKey->toArray(), $values);
+        $jwk = null;
 
-        if (!isset($values['kid']) || !isset($values['use'])) {
-            throw new \Exception('Missing required key attributes: kid, use');
+        try {
+            $jwkFromPem = RSAKey::createFromPEM($key)->toJwk();
+            $jwk = new JWK($this->extendWithAlg(array_merge($jwkFromPem->jsonSerialize(), $values)));
+        } catch (\Exception $e) {}
+
+        if (is_null($jwk)) {
+            try {
+                $jwk = new JWK($this->extendWithAlg(array_merge($key, $values)));
+            } catch (\Exception $e) {}
         }
 
-        $values['alg'] = ($values['use'] == 'sig') ? self::SIG_ALG_VALUE_RS256 : 'RSA-OAEP';
+        if (is_null($jwk)) {
+            try {
+                $keyObj = JWK::createFromJson($key);
+                $jwk = new JWK($this->extendWithAlg(array_merge($keyObj->jsonSerialize(), $values)));
+            } catch (\Exception $e) {}
+        }
 
-        $this->jwk = new JWK($values);
-        $this->private = $spomkyRsaKey->isPrivate();
+        if (is_null($jwk)) {
+            throw new \Exception('Invalid key format.');
+        }
+
+        if (!$jwk->has('kty') || !$jwk->has('kid') || !$jwk->has('use')) {
+            throw new \Exception('Missing required key attributes: kty, kid, use');
+        }
+
+        if (strtoupper($jwk->get('kty')) !== 'RSA') {
+            throw new \Exception('It is not an RSA key.');
+        }
+
+        $this->jwk = $jwk;
+        $this->private = $jwk->has('d');
+    }
+
+    /**
+     * @param array $keyParams
+     * 
+     * @return array
+     */
+    private function extendWithAlg(array $keyParams)
+    {
+        if (!isset($keyParams['alg'])) {
+            if (!isset($keyParams['use'])) {
+                throw new \Exception('Missing required key attribute: use');
+            }
+
+            $keyParams['alg'] = ($keyParams['use'] == 'sig') ? self::SIG_ALG_VALUE_RS256 : 'RSA-OAEP';
+        }
+
+        return $keyParams;
     }
 
     /**
      * Verifies the signature and decodes the payload of the given compact JWS
      *
      * @param string $compactJws Compact JWS
+     * @param bool $decoded
      *
-     * @return array The payload as an array
+     * @return array|string The payload as an array or string
      *
      * @throws GoodIDException
      */
-    public function verifyCompactJws($compactJws)
+    public function verifyCompactJws($compactJws, $decoded = true)
     {
-        try {
-            $loader = new Loader();
+        $serializer = new CompactSerializer();
 
-            return $loader->loadAndVerifySignatureUsingKey(
-                $compactJws,
-                $this->jwk,
-                [self::SIG_ALG_VALUE_RS256]
-            )->getPayload();
-        } catch (\Exception $e) {
-            throw new GoodIDException("Can not verify signature: " . $e->getMessage());
+        $jws = $serializer->unserialize($compactJws);
+        $headerChecker = new HeaderCheckerManager(
+            [new AlgorithmChecker(['RS256'])], // A list of header checkers
+            [new JWSTokenSupport()]            // A list of token support services (we only use the JWS token type here)
+        );
+
+        $algorithmManager = new AlgorithmManager([
+            new RS256(),
+        ]);
+        $jwsVerifier = new JWSVerifier($algorithmManager);
+
+        // We check all signatures
+        $isVerified = false;
+        for ($i = 0; $i < $jws->countSignatures(); $i++) {
+            try {
+                $headerChecker->check($jws, 0); // We check the header of the first (index=0) signature.        
+                if ($jwsVerifier->verifyWithKey($jws, $this->jwk, 0)) { // We verify the signature
+                    $isVerified = true;
+                    break;
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
         }
+
+        if (!$isVerified) {
+            throw new GoodIDException("Can not verify signature");
+        }
+        
+        if ($decoded) {
+            return JsonConverter::decode($jws->getPayload());
+        }
+
+        return $jws->getPayload();
     }
 
     /**
@@ -125,23 +196,7 @@ class RSAPublicKey implements KeyInterface
      */
     public function getKid()
     {
-        $values = $this->jwk->getAll();
-        return $values['kid'];
-    }
-
-    /**
-     * @param bool $includePrivate
-     *
-     * @return JWKInterface
-     */
-    public function asSpomkyKey($params = [], $includePrivate = false)
-    {
-        $jwk = $this->jwk;
-        if (!$includePrivate) {
-            $jwk = $jwk->toPublic();
-        }
-
-        return JWKFactory::createFromValues(array_merge($jwk->getAll(), $params));
+        return $this->jwk->get('kid');
     }
 
     /**

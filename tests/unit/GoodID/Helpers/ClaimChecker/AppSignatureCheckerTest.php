@@ -7,6 +7,11 @@ use Jose\Factory\JWSFactory;
 
 class AppSignatureCheckerTest extends \PHPUnit_Framework_TestCase
 {
+    protected function setUp()
+    {
+        $this->markTestIncomplete();
+    }
+
     /**
      * @test
      */

@@ -24,12 +24,10 @@
 
 namespace GoodID\Helpers;
 
-use GoodID\Exception\GoodIDException;
 use GoodID\Exception\ValidationException;
 use GoodID\Helpers\Http\HttpRequest;
 use GoodID\Helpers\Http\HttpResponse;
-use Jose\Object\JWKSet;
-use Jose\Object\JWKSetInterface;
+use Jose\Component\Core\JWKSet;
 
 /**
  * This class provides the URI's of the GoodID endpoints
@@ -37,7 +35,7 @@ use Jose\Object\JWKSetInterface;
 class GoodIDServerConfig
 {
     /**
-     * @var JWKSetInterface|null
+     * @var JWKSet|null
      */
     private $keystore;
 
@@ -138,7 +136,7 @@ class GoodIDServerConfig
     }
 
     /**
-     * @return JWKSetInterface
+     * @return JWKSet
      *
      * @throws ValidationException
      */
@@ -152,16 +150,10 @@ class GoodIDServerConfig
             }
 
             try {
-                $jwks = $response->getBodyJsonDecoded();
-            } catch (GoodIDException $e) {
+                $this->keystore = JWKSet::createFromJson($response->getBody());
+            } catch (\Exception $e) {
                 throw new ValidationException('GoodID jwksuri content is not valid JSON');
             }
-
-            if (!is_array($jwks)) {
-                throw new ValidationException('GoodID jwksuri content is not an object');
-            }
-
-            $this->keystore = new JWKSet($jwks);
         }
 
         return $this->keystore;

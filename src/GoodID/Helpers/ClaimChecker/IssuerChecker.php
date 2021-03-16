@@ -24,10 +24,9 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class IssuerChecker implements ClaimCheckerInterface
+class IssuerChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var string
@@ -44,22 +43,26 @@ class IssuerChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        if (!$jwt->hasClaim('iss')) {
+        var_dump($claims); exit;
+        if (!isset($claims['iss'])) {
             throw new \InvalidArgumentException('Missing issuer');
         }
 
-        if ($jwt->getClaim('iss') !== $this->issuer) {
+        if ($claims['iss'] !== $this->issuer) {
             throw new \InvalidArgumentException('Invalid issuer');
         }
+    }
 
-        return ['iss'];
+    public function supportedClaim(): string
+    {
+        return 'iss';
     }
 }

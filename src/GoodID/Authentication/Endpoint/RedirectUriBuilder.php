@@ -31,16 +31,17 @@ use GoodID\Authentication\GoodIDSuccessResponse;
 use GoodID\Authentication\GoodIDErrorResponse;
 use GoodID\Helpers\GoodidSession;
 use GoodID\Helpers\Request\TokenRequest;
-use Jose\Object\JWSInterface;
+use Jose\Component\Signature\JWS;
+use Jose\Component\Encryption\JWE;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestURI;
 use GoodID\Exception\GoodIDException;
 use GoodID\Exception\ValidationException;
-use GoodID\Helpers\Key\RSAPublicKey;
 use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\MobileCommunicationServiceInterface;
 use GoodID\Authentication\GoodIDResponseInterface;
 use GoodID\Helpers\GoodidResult;
+use Jose\Component\Core\Util\JsonConverter;
 
 class RedirectUriBuilder
 {
@@ -213,7 +214,7 @@ class RedirectUriBuilder
     /**
      * @param TokenRequest $tokenRequest
      * 
-     * @return JWSInterface
+     * @return JWS
      */
     private function getIdToken(TokenRequest $tokenRequest)
     {
@@ -221,6 +222,7 @@ class RedirectUriBuilder
 
         $tokenRequest->execute();
         $jwe = $tokenRequest->getIdTokenJwe();
+        error_log('IDtoken: ' . $jwe);
         $tokenExtractor = $this->serviceLocator->getTokenExtractor($this->goodidPartnerConfig->getEncryptionKeySet());
         $usedRequestObjectAsArray = $this->getRequestObjectAsArray();
 
@@ -235,14 +237,15 @@ class RedirectUriBuilder
         $authTimeRequested = isset($usedRequestObjectAsArray['claims']) && isset($usedRequestObjectAsArray['claims']['id_token']) && is_array($usedRequestObjectAsArray['claims']['id_token']) && isset($usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['id_token']['auth_time']['essential'] === true;
         $authTimeRequested |= isset($usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential']) && $usedRequestObjectAsArray['claims']['userinfo']['auth_time']['essential'] === true;
 
-        $idToken = $tokenExtractor->extractToken($jwe);
+        $idToken = $tokenExtractor->extractIDToken($jwe);
+        $idTokenClaims = JsonConverter::decode($idToken->getPayload());
         $idTokenVerifier = $this->serviceLocator->getIdTokenVerifier(
             $this->goodidPartnerConfig->getClientId(),
             $this->goodidPartnerConfig->getSecurityLevel(),
             $requestedMaxAge,
             $authTimeRequested,
             $stateNonceHandler->getCurrentNonce(),
-            $idToken->hasClaim('acr') ? $idToken->getClaim('acr') : null
+            isset($idTokenClaims['acr']) ? $idTokenClaims['acr'] : null
         );
         $idTokenVerifier->verifyIdToken($idToken);
 
@@ -251,12 +254,12 @@ class RedirectUriBuilder
 
     /**
      * @param TokenRequest $tokenRequest
-     * @param JWSInterface $idToken
+     * @param JWS $idToken
      * @param bool $matchingResponseValidation
      * 
-     * @return JWSInterface
+     * @return JWS
      */
-    private function getUserinfo(TokenRequest $tokenRequest, JWSInterface $idToken, $matchingResponseValidation)
+    private function getUserinfo(TokenRequest $tokenRequest, JWS $idToken, $matchingResponseValidation)
     {
         $goodIdServerConfig = $this->serviceLocator->getServerConfig();
         $requestFactory = $this->serviceLocator->getRequestFactory();
@@ -267,10 +270,12 @@ class RedirectUriBuilder
             $tokenRequest->getAccessToken()
         );
         $userinfoRequest->execute();
-
-        $userinfo = $tokenExtractor->extractToken($userinfoRequest->getUserInfoJwe());
+        $jwe = $userinfoRequest->getUserInfoJwe();
+        error_log('Userinfo: ' . $jwe);
+        $userinfo = $tokenExtractor->extractUserinfo($jwe);
         $userinfoVerifier = $this->serviceLocator->getUserinfoVerifier($this->goodidPartnerConfig->getSecurityLevel(), $idToken);
         $userinfoVerifier->verifyUserinfo($userinfo);
+        $userinfoClaims = JsonConverter::decode($userinfo->getPayload());
 
         // Matching response validation
         if ($matchingResponseValidation) {
@@ -283,7 +288,7 @@ class RedirectUriBuilder
             if (isset($usedRequestObjectAsArray["claims"]) && is_array($usedRequestObjectAsArray["claims"])) {
                 /** @var $validator ResponseValidator */
                 $validator = $this->serviceLocator->getResponseValidator();
-                $validator->validateMatchingResponse($usedRequestObjectAsArray["claims"], $userinfo->getClaims());
+                $validator->validateMatchingResponse($usedRequestObjectAsArray["claims"], $userinfoClaims);
             }
         }
         
@@ -291,14 +296,14 @@ class RedirectUriBuilder
     }
 
     /**
-     * @param JWSInterface $userinfo
+     * @param array $userinfoClaims
      * @param GoodidSession $goodidSession
      * 
      * @return void
      */
-    private function validateAttachments(JWSInterface $userinfo, GoodidSession $goodidSession = null)
+    private function validateAttachments(array $userinfoClaims, GoodidSession $goodidSession = null)
     {
-        if (!$userinfo->hasClaim(GoodIDSuccessResponse::USERINFO_KEY_ATTACHMENTS)) {
+        if (!isset($userinfoClaims[GoodIDSuccessResponse::USERINFO_KEY_ATTACHMENTS])) {
             return;
         }
 
@@ -316,7 +321,7 @@ class RedirectUriBuilder
             throw new \InvalidArgumentException('Not found any attachment hash in session');
         }
 
-        foreach ($userinfo->getClaim(GoodIDSuccessResponse::USERINFO_KEY_ATTACHMENTS) as $attachmentId => $hash) {
+        foreach ($userinfoClaims[GoodIDSuccessResponse::USERINFO_KEY_ATTACHMENTS] as $attachmentId => $hash) {
             if (!isset($uploadedAttachments[$attachmentId]) || $uploadedAttachments[$attachmentId] !== $hash) {
                 throw new \Exception('Attachment is not in session or has different value:' . $attachmentId);
             }
@@ -363,8 +368,9 @@ class RedirectUriBuilder
 
             $idToken = $this->getIdToken($tokenRequest);
             $userinfo = $this->getUserinfo($tokenRequest, $idToken, $matchingResponseValidation);
+            $userinfoClaims = JsonConverter::decode($userinfo->getPayload());
 
-            $this->validateAttachments($userinfo, $goodidSession);
+            $this->validateAttachments($userinfoClaims, $goodidSession);
             $this->accessToken = $tokenRequest->getAccessToken();
             $this->pushTokenResponse = $tokenRequest->getPushTokenResponse();
 

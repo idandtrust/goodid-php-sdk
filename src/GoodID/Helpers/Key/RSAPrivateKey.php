@@ -25,7 +25,10 @@
 namespace GoodID\Helpers\Key;
 
 use GoodID\Exception\GoodIDException;
-use Jose\Factory\JWSFactory;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Algorithm\RS256;
+use Jose\Component\Signature\Serializer\CompactSerializer;
 
 /**
  * RSAPrivateKey class
@@ -55,16 +58,42 @@ class RSAPrivateKey extends RSAPublicKey
     /**
      * Signs and encodes the given array as the payload of a compact JWS
      *
-     * @param array $payload Payload
+     * @param mixed $payload Payload
+     * @param bool $serialized 
      *
-     * @return string Compact JWS
+     * @return JWS|string Compact JWS
      */
-    public function signAsCompactJws(array $payload)
+    public function signAsCompactJws($payload, $serialized = true)
     {
-        $jsonString = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        return JWSFactory::createJWSToCompactJSON($jsonString, $this->jwk, [
-            self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
-            self::KEY_ID => $this->getKid()
+        if (is_array($payload)) {
+            $payload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+
+        // This managers handles all algorithms we need to use. 
+        $algorithmManager = new AlgorithmManager([
+            new RS256(),
         ]);
+
+        // The JWS Builder
+        $jwsBuilder = new JWSBuilder($algorithmManager);
+
+        // We build our JWS object
+        $jws = $jwsBuilder
+            ->create()                    // Indicates we want to create a new token
+            ->withPayload($payload)       // We set the payload
+            ->addSignature($this->jwk, [
+                self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
+                self::KEY_ID => $this->getKid()
+            ]) // We add a signature
+            ->build();                    // We compute the JWS
+
+        if ($serialized) {
+            // We need to serialize the token.
+            // In this example we will use the compact serialization mode (most common mode).
+            $serializer = new CompactSerializer();
+            return $serializer->serialize($jws);
+        }
+
+        return $jws;
     }
 }

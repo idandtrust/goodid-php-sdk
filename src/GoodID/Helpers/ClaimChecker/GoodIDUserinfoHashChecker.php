@@ -25,40 +25,44 @@
 namespace GoodID\Helpers\ClaimChecker;
 
 use GoodID\Helpers\NormalizedJson;
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWSInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
+use Jose\Component\Signature\JWS;
+use Jose\Component\Core\Util\JsonConverter;
 
-class GoodIDUserinfoHashChecker implements ClaimCheckerInterface
+class GoodIDUserinfoHashChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
-     * @var JWSInterface
+     * @var JWS
      */
     private $userinfoHash;
 
     /**
      * GoodIDUserinfoHashChecker constructor.
-     * @param JWSInterface $idToken
+     * @param JWS $idToken
      */
-    public function __construct(JWSInterface $idToken)
+    public function __construct(JWS $idToken)
     {
-        $this->userinfoHash = $idToken->getClaim('uih');
+        $idTokenClaims = JsonConverter::decode($idToken->getPayload());
+        $this->userinfoHash = $idTokenClaims['uih'];
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        $userinfoHash = NormalizedJson::hash((object)$jwt->getClaims());
+        $userinfoHash = NormalizedJson::hash((object)$claims);
         if ($this->userinfoHash !== $userinfoHash) {
             throw new \InvalidArgumentException('Unverified userinfo');
         }
+    }
 
-        return [];
+    public function supportedClaim(): string
+    {
+        return 'uih';
     }
 }

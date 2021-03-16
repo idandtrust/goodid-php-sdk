@@ -24,7 +24,8 @@
 
 namespace GoodID\Authentication;
 
-use Jose\Object\JWSInterface;
+use Jose\Component\Signature\JWS;
+use Jose\Component\Encryption\JWE;
 use GoodID\Helpers\Request\TokenRequest;
 use GoodID\Exception\GoodIDException;
 use GoodID\Helpers\GoodidSession;
@@ -32,6 +33,8 @@ use GoodID\Helpers\Push\PushTokenResponse;
 use GoodID\Helpers\Response\Claims;
 use GoodID\Helpers\Response\LegacyClaimAdapter;
 use GoodID\Helpers\SecurityLevel;
+use Jose\Component\Core\Util\JsonConverter;
+use Jose\Component\Signature\Serializer\CompactSerializer;
 
 class GoodIDSuccessResponse extends AbstractGoodIDResponse
 {
@@ -39,6 +42,8 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
 
     private $idToken;
     private $userinfo;
+    private $idTokenClaims = array();
+    private $userinfoClaims = array();
     private $claimAdapter;
     private $goodIDSession;
     private $state;
@@ -48,16 +53,16 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
     private $securityLevel;
 
     /**
-     * @param JWSInterface $idToken
-     * @param JWSInterface $userinfo
+     * @param JWS $idToken
+     * @param JWE $userinfo
      * @param string $state
      * @param TokenRequest $tokenRequest
      * @param string $securityLevel
      * @param GoodIDSession $goodIdSession
      */
     public function __construct(
-        JWSInterface $idToken,
-        JWSInterface $userinfo,
+        JWS $idToken,
+        JWE $userinfo,
         $state,
         TokenRequest $tokenRequest,
         $securityLevel,
@@ -70,10 +75,12 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
         $this->tokenRequest = $tokenRequest;
         $this->securityLevel = $securityLevel;
         $this->goodIDSession = $goodIdSession;
+        $this->idTokenClaims = JsonConverter::decode($this->idToken->getPayload());
+        $this->userinfoClaims = JsonConverter::decode($this->userinfo->getPayload());
 
         $this->data = $this->mergeTokens(
-                $this->claimAdapter->adaptIdToken($idToken->getClaims()),
-                $this->claimAdapter->adaptUserInfo($userinfo->getClaims())
+            $this->claimAdapter->adaptIdToken($this->idTokenClaims),
+            $this->claimAdapter->adaptUserInfo($this->userinfoClaims)
         );
         $this->claims = new Claims($this->data['claims']);
     }
@@ -99,19 +106,20 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
      */
     public function getIdTokenJWS()
     {
-        return $this->idToken->toCompactJSON(0);
+        $compactSerializer = new CompactSerializer();
+        return $compactSerializer->serialize($this->idToken);
     }
 
     /**
-     * @return JWSInterface
+     * @return JWE
      */
-    public function getUserinfoJWSObject()
+    public function getUserinfoJWEObject()
     {
         return $this->userinfo;
     }
 
     /**
-     * @return JWSInterface
+     * @return JWS
      */
     public function getIdTokenJWSObject()
     {
@@ -123,7 +131,7 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
      */
     public function getIdTokenClaims()
     {
-        return $this->idToken->getClaims();
+        return $this->idTokenClaims;
     }
 
     /**
@@ -131,7 +139,7 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
      */
     public function getUserinfoClaims()
     {
-        return $this->userinfo->getClaims();
+        return $this->userinfoClaims;
     }
 
     /**
@@ -228,11 +236,11 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
      */
     public function getUserEncJWK()
     {
-        if (!$this->userinfo->hasClaim('user_enc_jwk')) {
+        if (!isset($this->userinfoClaims['user_enc_jwk'])) {
             throw new GoodIDException("Internal error: user_enc_jwk not set");
         }
 
-        return $this->userinfo->getClaim('user_enc_jwk');
+        return $this->userinfoClaims['user_enc_jwk'];
     }
 
     /**
@@ -248,11 +256,11 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
             throw new GoodIDException("deviceJWK is available only on 'high' SecurityLevel");
         }
 
-        if (!$this->userinfo->hasClaim('seal_jwk')) {
+        if (!isset($this->userinfoClaims['seal_jwk'])) {
             throw new GoodIDException("Internal error: seal_jwk not set");
         }
 
-        return $this->userinfo->getClaim('seal_jwk');
+        return $this->userinfoClaims['seal_jwk'];
     }
 
     /**
@@ -268,11 +276,11 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
             throw new GoodIDException("userJWK is available only on 'high' SecurityLevel");
         }
 
-        if (!$this->userinfo->hasClaim('user_jwk')) {
+        if (!isset($this->userinfoClaims['user_jwk'])) {
             throw new GoodIDException("Internal error: user_jwk not set");
         }
 
-        return $this->userinfo->getClaim('user_jwk');
+        return $this->userinfoClaims['user_jwk'];
     }
 
     /**
@@ -288,11 +296,11 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
             throw new GoodIDException("userId is available only on 'high' SecurityLevel");
         }
 
-        if (!$this->userinfo->hasClaim('user')) {
+        if (!isset($this->userinfoClaims['user'])) {
             throw new GoodIDException("Internal error: user not set");
         }
 
-        return $this->userinfo->getClaim('user');
+        return $this->userinfoClaims['user'];
     }
 
     /**
@@ -308,11 +316,11 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
             throw new GoodIDException("deviceId is available only on 'high' SecurityLevel");
         }
 
-        if (!$this->userinfo->hasClaim('seal')) {
+        if (!isset($this->userinfoClaims['seal'])) {
             throw new GoodIDException("Internal error: seal not set");
         }
 
-        return $this->userinfo->getClaim('seal');
+        return $this->userinfoClaims['seal'];
     }
 
     /**
@@ -322,7 +330,9 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
      */
     public function getSignatureIdReference()
     {
-        return $this->userinfo->getClaim('signature_id_ref');
+        return isset($this->userinfoClaims['signature_id_ref'])
+            ? $this->userinfoClaims['signature_id_ref']
+            : null;
     }
 
     /**
@@ -346,8 +356,8 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
      */
     public function getValidAttachments()
     {
-        return $this->userinfo->hasClaim(self::USERINFO_KEY_ATTACHMENTS)
-                ? $this->userinfo->getClaim(self::USERINFO_KEY_ATTACHMENTS)
+        return isset($this->userinfoClaims[self::USERINFO_KEY_ATTACHMENTS])
+                ? $this->userinfoClaims[self::USERINFO_KEY_ATTACHMENTS]
                 : null;
     }
 

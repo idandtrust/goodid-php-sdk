@@ -2,8 +2,6 @@
 
 namespace GoodID\Helpers\Key;
 
-use Jose\Object\JWKInterface;
-
 class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -30,18 +28,7 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Can not verify signature: No payload.
-     */
-    public function itFailsWhenPayloadIsEmpty()
-    {
-        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
-        $key->verifyCompactJws($this->jwsEmptyPayload);
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Can not verify signature: Unable to verify the JWS.
+     * @expectedExceptionMessage Can not verify signature
      */
     public function itFailsWhenSignatureIsWrong()
     {
@@ -65,18 +52,6 @@ class RSAPublicKeyTest extends \PHPUnit_Framework_TestCase
     {
         $publicKey = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $this->assertEquals('test', $publicKey->getKid());
-    }
-
-    /**
-     * @test
-     */
-    public function itCanBeConvertedToSpomkyKey()
-    {
-        $publicKey = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
-        $spomkyKey = $publicKey->asSpomkyKey();
-
-        $this->assertInstanceOf(JWKInterface::class, $spomkyKey);
-        $this->assertEquals($publicKey->getPublicKeyAsJwkArray(), $spomkyKey->getAll());
     }
 
     private $publicKey = '

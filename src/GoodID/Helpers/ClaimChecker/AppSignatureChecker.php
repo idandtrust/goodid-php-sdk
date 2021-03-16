@@ -26,14 +26,14 @@ namespace GoodID\Helpers\ClaimChecker;
 
 use GoodID\Helpers\NormalizedJson;
 use GoodID\Helpers\SecurityLevel;
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWK;
-use Jose\Object\JWSInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
+use Jose\Component\Core\JWK;
+use Jose\Component\Signature\JWS;
 use Jose\Util\JWSLoader;
 use Jose\Verifier;
+use Jose\Component\Core\Util\JsonConverter;
 
-class AppSignatureChecker implements ClaimCheckerInterface
+class AppSignatureChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var string
@@ -41,7 +41,7 @@ class AppSignatureChecker implements ClaimCheckerInterface
     private $securityLevel;
 
     /**
-     * @var JWSInterface
+     * @var JWS
      */
     private $idToken;
 
@@ -56,7 +56,7 @@ class AppSignatureChecker implements ClaimCheckerInterface
     private $appSignedIdTokenPayload;
 
     /**
-     * @var JWSInterface
+     * @var JWS
      */
     private $appSignedIdToken;
 
@@ -64,10 +64,10 @@ class AppSignatureChecker implements ClaimCheckerInterface
      * AppSignatureChecker constructor.
      *
      * @param string $securityLevel
-     * @param JWSInterface $idToken
+     * @param JWS $idToken
      * @param string $protectedClaimName
      */
-    public function __construct($securityLevel, JWSInterface $idToken, $protectedClaimName)
+    public function __construct($securityLevel, JWS $idToken, $protectedClaimName)
     {
         SecurityLevel::assertValid($securityLevel);
 
@@ -77,37 +77,35 @@ class AppSignatureChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
         if ($this->securityLevel === SecurityLevel::NORMAL) {
-            if ($jwt->hasClaim($this->protectedClaimName)) {
+            if (isset($claims[$this->protectedClaimName])) {
                 throw new \InvalidArgumentException('Unexpected protected claim: ' . $this->protectedClaimName);
             }
-            if ($jwt->hasClaim($this->protectedClaimName . '_jwk')) {
+            if (isset($claims[$this->protectedClaimName . '_jwk'])) {
                 throw new \InvalidArgumentException('Unexpected protection key for claim: ' . $this->protectedClaimName);
             }
-            return [];
         }
 
-        $jwk = $this->extractProtectionKey($jwt, $this->extractClaimValue($jwt));
+        // @TODO
+        $jwk = $this->extractProtectionKey($claims, $this->extractClaimValue($claims));
         $this->regenerateAppSignedContent($this->idToken);
         $this->checkSignatures($jwk);
-
-
-        return [$this->protectedClaimName];
     }
 
-    private function regenerateAppSignedContent(JWSInterface $idToken)
+    private function regenerateAppSignedContent(JWS $idToken)
     {
         if ($this->securityLevel !== SecurityLevel::HIGH) {
             return;
         }
 
-        if (!$idToken->hasClaim('signatures')) {
+        $idTokenClaims = JsonConverter::decode($idToken->getPayload());
+        if (!isset($idTokenClaims['signatures'])) {
             throw new \InvalidArgumentException('Missing app signatures');
         }
 
@@ -122,7 +120,8 @@ class AppSignatureChecker implements ClaimCheckerInterface
          *
          * @link https://tools.ietf.org/html/rfc7515#section-7.2.1
          */
-        $this->appSignedIdToken = JWSLoader::loadSerializedJsonJWS($idToken->getClaims());
+        //@TODO
+        $this->appSignedIdToken = JWSLoader::loadSerializedJsonJWS($idTokenClaims);
 
         /**
          * Now we need to recreate the payload the app signed. Which is the
@@ -130,44 +129,44 @@ class AppSignatureChecker implements ClaimCheckerInterface
          * We're using our normalized JSON serialization here.
          */
         $this->appSignedIdTokenPayload = NormalizedJson::encode((object)array_diff_key(
-            $idToken->getClaims(),
+            $idTokenClaims,
             ['signatures' => null]));
 
     }
 
     /**
-     * @param JWTInterface $jwt
+     * @param array $claims
      *
      * @return string
      */
-    private function extractClaimValue(JWTInterface $jwt)
+    private function extractClaimValue(array $claims)
     {
-        if (!$jwt->hasClaim($this->protectedClaimName)) {
+        if (!isset($claims[$this->protectedClaimName])) {
             throw new \InvalidArgumentException('Missing protected claim: ' . $this->protectedClaimName);
         }
-        return $jwt->getClaim($this->protectedClaimName);
+        return $claims[$this->protectedClaimName];
     }
 
     /**
-     * @param JWTInterface $jwt
+     * @param array $claims
      * @param string thumbprint
      *
      * @return JWK
      */
-    private function extractProtectionKey(JWTInterface $jwt, $thumbprint)
+    private function extractProtectionKey(array $claims, $thumbprint)
     {
         $kid = $this->protectedClaimName . '_jwk';
-        if (!$jwt->hasClaim($kid)) {
+        if (!isset($claims[$kid])) {
             throw new \InvalidArgumentException('Unverifiable protected claim: ' . $this->protectedClaimName);
         }
 
-        if (!is_array($jwt->getClaim($kid))) {
+        if (!is_array($claims[$kid])) {
             throw new \InvalidArgumentException('Malformed protection key for claim: ' . $this->protectedClaimName);
         }
 
         $jwk = null;
         try {
-            $jwk = new JWK(array_merge($jwt->getClaim($kid), ['kid' => $kid]));
+            $jwk = new JWK(array_merge($claims[$kid], ['kid' => $kid]));
         } catch (\InvalidArgumentException $ex) {
             throw new \InvalidArgumentException(
                 'Malformed protection key for claim: ' . $this->protectedClaimName,
@@ -216,5 +215,10 @@ class AppSignatureChecker implements ClaimCheckerInterface
         }
 
         throw new \InvalidArgumentException('Missing signature for claim: ' . $this->protectedClaimName);
+    }
+
+    public function supportedClaim(): string
+    {
+        return $this->protectedClaimName . '_jwk';
     }
 }

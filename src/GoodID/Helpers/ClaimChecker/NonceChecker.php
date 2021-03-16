@@ -24,10 +24,9 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class NonceChecker implements ClaimCheckerInterface
+class NonceChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var null|string
@@ -44,25 +43,29 @@ class NonceChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        if (!$jwt->hasClaim('nonce')) {
+        if (!isset($claims['nonce'])) {
             if ($this->nonce !== null) {
                 throw new \InvalidArgumentException('Invalid nonce');
             }
-            return [];
+
+            return;
         }
 
-        if ($jwt->getClaim('nonce') !== $this->nonce) {
+        if ($claims['nonce'] !== $this->nonce) {
             throw new \InvalidArgumentException('Invalid nonce');
         }
+    }
 
-        return ['nonce'];
+    public function supportedClaim(): string
+    {
+        return 'nonce';
     }
 }

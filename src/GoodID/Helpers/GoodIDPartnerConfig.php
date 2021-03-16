@@ -26,7 +26,7 @@ namespace GoodID\Helpers;
 
 use GoodID\Helpers\Key\RSAPrivateKey;
 use GoodID\Helpers\SecurityLevel;
-use Jose\Object\JWKSet;
+use Jose\Component\Core\JWKSet;
 
 class GoodIDPartnerConfig
 {
@@ -129,13 +129,12 @@ class GoodIDPartnerConfig
      */
     public function getEncryptionKeySet()
     {
-        $keySet = new JWKSet();
         foreach ($this->getEncryptionKeys() as $key) {
             /* @var $key RSAPrivateKey */
-            $keySet->addKey($key->asSpomkyKey(['use' => 'enc', 'alg' => 'RSA-OAEP'], true));
+            $keys[] = $key->getJwk();
         }
 
-        return $keySet;
+        return new JWKSet($keys);
     }
 
     /**

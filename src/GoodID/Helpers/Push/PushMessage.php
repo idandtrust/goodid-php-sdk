@@ -26,7 +26,7 @@ namespace GoodID\Helpers\Push;
 
 use GoodID\Helpers\Key\RSAPrivateKey;
 use Jose\Factory\JWEFactory;
-use Jose\Object\JWK;
+use Jose\Component\Core\JWK;
 
 class PushMessage
 {

@@ -24,10 +24,9 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class SubChecker implements ClaimCheckerInterface
+class SubChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var null|string
@@ -44,22 +43,25 @@ class SubChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        if (!$jwt->hasClaim('sub')) {
+        if (!isset($claims['sub'])) {
             throw new \InvalidArgumentException('Missing sub');
         }
 
-        if ($this->sub !== null && $jwt->getClaim('sub') !== $this->sub) {
+        if ($this->sub !== null && $claims['sub'] !== $this->sub) {
             throw new \InvalidArgumentException('Invalid sub');
         }
+    }
 
-        return ['sub'];
+    public function supportedClaim(): string
+    {
+        return 'sub';
     }
 }
