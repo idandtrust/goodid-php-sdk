@@ -12,6 +12,11 @@ function error_log($message)
     TokenRequestTest::$gatheredLogs[] = $message;
 }
 
+function trigger_error($message, $logLevel)
+{
+    TokenRequestTest::$gatheredLogs[] = $message;
+}
+
 class TokenRequestTest extends \PHPUnit_Framework_TestCase
 {
     public static $gatheredLogs;

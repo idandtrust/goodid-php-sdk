@@ -222,7 +222,7 @@ class RedirectUriBuilder
 
         $tokenRequest->execute();
         $jwe = $tokenRequest->getIdTokenJwe();
-        error_log('IDtoken: ' . $jwe);
+        syslog(LOG_DEBUG, 'IDtoken: ' . $jwe);
         $tokenExtractor = $this->serviceLocator->getTokenExtractor($this->goodidPartnerConfig->getEncryptionKeySet());
         $usedRequestObjectAsArray = $this->getRequestObjectAsArray();
 
@@ -271,7 +271,7 @@ class RedirectUriBuilder
         );
         $userinfoRequest->execute();
         $jwe = $userinfoRequest->getUserInfoJwe();
-        error_log('Userinfo: ' . $jwe);
+        syslog(LOG_DEBUG, 'Userinfo: ' . $jwe);
         $userinfo = $tokenExtractor->extractUserinfo($jwe);
         $userinfoVerifier = $this->serviceLocator->getUserinfoVerifier($this->goodidPartnerConfig->getSecurityLevel(), $idToken);
         $userinfoVerifier->verifyUserinfo($userinfo);

@@ -295,7 +295,7 @@ class TokenRequest
             }
 
             if (isset($tokenResponseArray['error_type']) && $tokenResponseArray['error_type'] === 'warning') {
-                error_log('GoodID Token Endpoint Warning: ' . $errorString);
+                trigger_error('GoodID Token Endpoint Warning: ' . $errorString, E_WARNING);
             } else {
                 throw new GoodIDException('GoodID Token Endpoint Error: ' . $errorString);
             }
