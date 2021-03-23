@@ -352,16 +352,6 @@ class GoodIDSuccessResponse extends AbstractGoodIDResponse
     }
 
     /**
-     * @return array|null
-     */
-    public function getValidAttachments()
-    {
-        return isset($this->userinfoClaims[self::USERINFO_KEY_ATTACHMENTS])
-                ? $this->userinfoClaims[self::USERINFO_KEY_ATTACHMENTS]
-                : null;
-    }
-
-    /**
      * @return boolean
      */
     public function isSuccessful()
