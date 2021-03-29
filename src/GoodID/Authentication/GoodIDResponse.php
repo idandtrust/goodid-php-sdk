@@ -234,6 +234,10 @@ class GoodIDResponse
 
             $usedRequestObjectAsArray = $this->getRequestObjectAsArray($requestSource, $signingKey);
 
+            if (is_object($usedRequestObjectAsArray['claims']['userinfo'])) {
+                $usedRequestObjectAsArray['claims']['userinfo'] = [];
+            }
+
             $requestedMaxAge = isset($usedRequestObjectAsArray['max_age'])
                 ? $usedRequestObjectAsArray['max_age']
                 : null;
