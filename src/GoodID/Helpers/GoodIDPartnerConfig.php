@@ -25,6 +25,7 @@
 namespace GoodID\Helpers;
 
 use GoodID\Helpers\Key\RSAPrivateKey;
+use GoodID\Helpers\Key\ECPrivateKey;
 use GoodID\Helpers\SecurityLevel;
 use Jose\Component\Core\JWKSet;
 
