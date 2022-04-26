@@ -22,47 +22,49 @@
  *
  */
 
-namespace GoodID\Helpers\ClaimChecker;
+namespace GoodID\Authentication\Endpoint;
 
-use Jose\Component\Checker\ClaimChecker;
+use GoodID\Exception\GoodIDException;
 
-class AudienceChecker implements ClaimChecker, GoodIDClaimChecker
+/**
+ * This class is responsible to build the Authentication Request
+ *
+ * @link http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest Authentication Request
+ */
+class InitiateLoginUriBuilder extends AbstractInitiateLoginUriBuilder
 {
     /**
-     * @var string
+     * Builds the authentication request URI used at normal sign-ins
+     *
+     * @return string
+     *
+     * @throws GoodIDException
      */
-    private $audience;
-
-    /**
-     * IdTokenIssuerChecker constructor.
-     * @param string $audience
-     */
-    public function __construct($audience)
+    public function buildRequestUrl()
     {
-        $this->audience = $audience;
+        $this->sessionDataHandler->removeAll();
+        $queryParams = $this->buildQueryParams();
+        $this->setSessionData();
+        $this->saveGoodIDSession();
+
+        return $this->goodIdServerConfig->getAuthorizationEndpointUri() . '?' . http_build_query($queryParams);
     }
 
     /**
-     * @param $claims
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return void
+     * @return array
      */
-    public function checkClaim($claims): void
+    public function getClaims()
     {
-        if (!isset($claims['aud'])) {
-            throw new \InvalidArgumentException('Missing audience');
-        }
-
-        $audience = (array) $claims['aud'];
-        if (!in_array($this->audience, $audience, true)) {
-            throw new \InvalidArgumentException('Invalid audience');
-        }
+        return $this->requestSource->getClaims($this->signingKey);
     }
 
-    public function supportedClaim(): string
+    /**
+     * The main logic of this endpoint
+     *
+     * @codeCoverageIgnore
+     */
+    public function run()
     {
-        return 'aud';
+        header('Location: ' . $this->buildRequestUrl());
     }
 }

@@ -25,22 +25,22 @@
 namespace GoodID\Helpers\Key;
 
 use GoodID\Exception\GoodIDException;
-use Jose\Component\KeyManagement\KeyConverter\RSAKey;
+use Jose\Component\KeyManagement\KeyConverter\ECKey;
 use Jose\Component\Core\JWK;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Checker\HeaderCheckerManager;
 use Jose\Component\Checker\AlgorithmChecker;
 use Jose\Component\Signature\JWSVerifier;
-use Jose\Component\Signature\Algorithm\RS256;
+use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\JWSTokenSupport;
 use Jose\Component\Core\Util\JsonConverter;
 
 /**
- * An RSA key class with sign/verify and encrypt/decrypt capabilities in the JWS/JWE format.
+ * An EC key class with sign/verify and encrypt/decrypt capabilities in the JWS/JWE format.
  * It can act as either a private or public key based on the parameters that it is initialized with.
  */
-class RSAPublicKey implements KeyInterface
+class ECPublicKey implements KeyInterface
 {
     /**
      * Signature algorithm parameter name
@@ -49,9 +49,8 @@ class RSAPublicKey implements KeyInterface
 
     /**
      * Signature algorithm:
-     * RSASSA-PKCS1-v1_5 using SHA-256
      */
-    const SIG_ALG_VALUE_RS256 = "RS256";
+    const SIG_ALG_VALUE_ES256 = "ES256";
 
     /**
      * Key Identifier param.
@@ -69,7 +68,7 @@ class RSAPublicKey implements KeyInterface
     protected $private;
 
     /**
-     * RSAPublicKey constructor
+     * ECPublicKey constructor
      *
      * @param string|array $key PEM string or JWK array
      * @param array Additional key parameters.
@@ -80,7 +79,7 @@ class RSAPublicKey implements KeyInterface
 
         if (is_string($key)) {
             try {
-                $jwkFromPem = new JWK(RSAKey::createFromPEM($key)->toArray());
+                $jwkFromPem = new JWK(ECKey::createFromPEM($key)->toArray());
                 $jwk = new JWK($this->extendWithAlg(array_merge($jwkFromPem->jsonSerialize(), $values)));
             } catch (\Exception $e) {}
 
@@ -106,8 +105,8 @@ class RSAPublicKey implements KeyInterface
             throw new \Exception('Missing required key attributes: kty, kid, use');
         }
 
-        if (strtoupper($jwk->get('kty')) !== 'RSA') {
-            throw new \Exception('It is not an RSA key.');
+        if (strtoupper($jwk->get('kty')) !== 'EC') {
+            throw new \Exception('It is not an EC key.');
         }
 
         $this->jwk = $jwk;
@@ -126,7 +125,7 @@ class RSAPublicKey implements KeyInterface
                 throw new \Exception('Missing required key attribute: use');
             }
 
-            $keyParams['alg'] = ($keyParams['use'] == 'sig') ? self::SIG_ALG_VALUE_RS256 : 'RSA-OAEP';
+            $keyParams['alg'] = self::SIG_ALG_VALUE_ES256;
         }
 
         return $keyParams;
@@ -148,12 +147,12 @@ class RSAPublicKey implements KeyInterface
 
         $jws = $serializer->unserialize($compactJws);
         $headerChecker = new HeaderCheckerManager(
-            [new AlgorithmChecker(['RS256'])], // A list of header checkers
+            [new AlgorithmChecker(['ES256'])], // A list of header checkers
             [new JWSTokenSupport()]            // A list of token support services (we only use the JWS token type here)
         );
 
         $algorithmManager = new AlgorithmManager([
-            new RS256(),
+            new ES256(),
         ]);
         $jwsVerifier = new JWSVerifier($algorithmManager);
 
@@ -174,7 +173,7 @@ class RSAPublicKey implements KeyInterface
         if (!$isVerified) {
             throw new GoodIDException("Can not verify signature");
         }
-        
+
         if ($decoded) {
             return JsonConverter::decode($jws->getPayload());
         }

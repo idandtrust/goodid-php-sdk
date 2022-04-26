@@ -24,45 +24,33 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Component\Checker\ClaimChecker;
+use Jose\Component\Checker\ClaimCheckerManager as JoseClaimCheckManager;
 
-class AudienceChecker implements ClaimChecker, GoodIDClaimChecker
+class ClaimCheckerManager extends JoseClaimCheckManager
 {
-    /**
-     * @var string
-     */
-    private $audience;
+    protected $checkers = [];
 
     /**
-     * IdTokenIssuerChecker constructor.
-     * @param string $audience
-     */
-    public function __construct($audience)
-    {
-        $this->audience = $audience;
-    }
-
-    /**
-     * @param $claims
+     * This method checks all the claims passed as argument.
+     * All claims are checked against the claim checkers.
+     * If one fails, the InvalidClaimException is thrown.
      *
-     * @throws \InvalidArgumentException
-     *
-     * @return void
+     * This method returns an array with all checked claims.
+     * It is up to the implementor to decide use the claims that have not been checked.
      */
-    public function checkClaim($claims): void
+    public function checkClaims(array $claims): array
     {
-        if (!isset($claims['aud'])) {
-            throw new \InvalidArgumentException('Missing audience');
+        $checkedClaims = [];
+        foreach ($this->checkers as $claim => $checker) {
+            if ($checker instanceof GoodIDClaimChecker) {
+                $checker->checkClaim($claims);
+                $checkedClaims[$claim] = $claims[$claim];
+            } else {
+                $checker->checkClaim($claims[$claim]);
+                $checkedClaims[$claim] = $claims[$claim];
+            }
         }
 
-        $audience = (array) $claims['aud'];
-        if (!in_array($this->audience, $audience, true)) {
-            throw new \InvalidArgumentException('Invalid audience');
-        }
-    }
-
-    public function supportedClaim(): string
-    {
-        return 'aud';
+        return $checkedClaims;
     }
 }

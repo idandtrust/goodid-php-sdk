@@ -20,7 +20,7 @@ class OpenIDRequestURITest extends \PHPUnit_Framework_TestCase
      */
     public function itDownloadsAndExtractsContents()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $uri = $this->createMockUri($this->jws);
 
@@ -41,7 +41,7 @@ class OpenIDRequestURITest extends \PHPUnit_Framework_TestCase
      */
     public function itReportsEncryptedJwt()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $uri = $this->createMockUri($this->jwe);
 
@@ -53,7 +53,7 @@ class OpenIDRequestURITest extends \PHPUnit_Framework_TestCase
      */
     public function itReportsEncryptedJwt2()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $uri = $this->createMockUri($this->jwe);
 
@@ -65,7 +65,7 @@ class OpenIDRequestURITest extends \PHPUnit_Framework_TestCase
      */
     public function itExtractsClaims()
     {
-        $key = new RSAPublicKey($this->publicKey);
+        $key = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
 
         $uri = $this->createMockUri($this->jws);
 

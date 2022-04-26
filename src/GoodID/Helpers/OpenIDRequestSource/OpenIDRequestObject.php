@@ -50,10 +50,11 @@ class OpenIDRequestObject implements OpenIDRequestSource
      * OpenIDRequestObject constructor
      *
      * @param string|array $claims The requested claims as a string (JSON) or array.
+     * @param array $scopes
      *
      * @throws GoodIDException
      */
-    public function __construct($claims)
+    public function __construct($claims, array $scopes = array())
     {
         if (is_string($claims)) {
             $this->claims = json_decode($claims, true);
@@ -66,8 +67,9 @@ class OpenIDRequestObject implements OpenIDRequestSource
         } else {
             throw new GoodIDException("Claims parameter must be string (JSON) or array.");
         }
-        
-        $this->scopes[] = self::SCOPE_OPENID;
+
+        $this->scopes = (array)$scopes;
+        $this->addScope(self::SCOPE_OPENID);
     }
 
     /**

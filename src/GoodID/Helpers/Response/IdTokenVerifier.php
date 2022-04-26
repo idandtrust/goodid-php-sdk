@@ -33,8 +33,8 @@ use GoodID\Helpers\ClaimChecker\IssuerChecker;
 use GoodID\Helpers\ClaimChecker\NonceChecker;
 use GoodID\Helpers\ClaimChecker\RequiredClaimChecker;
 use GoodID\Helpers\ClaimChecker\SubChecker;
-use Jose\Checker\CheckerManager;
-use Jose\Object\JWSInterface;
+use GoodID\Helpers\ClaimChecker\ClaimCheckerManager;
+use Jose\Component\Signature\JWS;
 
 class IdTokenVerifier
 {
@@ -56,32 +56,30 @@ class IdTokenVerifier
     {
         $timeToleranceInSeconds = 0;
 
-        $checker = new CheckerManager();
-
         // OpenID specific validation
-        $checker->addClaimChecker(new IssuerChecker($issuer));
-        $checker->addClaimChecker(new SubChecker());
-        $checker->addClaimChecker(new AudienceChecker($clientId));
-        $checker->addClaimChecker(new ExpirationChecker($timeToleranceInSeconds));
-        $checker->addClaimChecker(new AuthTimeChecker($timeToleranceInSeconds, $requestedMaxAge, $authTimeRequested));
-        $checker->addClaimChecker(new NonceChecker($nonce));
+        $claimCheckers[] = new IssuerChecker($issuer);
+        $claimCheckers[] = new SubChecker();
+        $claimCheckers[] = new AudienceChecker($clientId);
+        $claimCheckers[] = new ExpirationChecker($timeToleranceInSeconds);
+        $claimCheckers[] = new AuthTimeChecker($timeToleranceInSeconds, $requestedMaxAge, $authTimeRequested);
+        $claimCheckers[] = new NonceChecker($nonce);
 
         // GoodID specific validation
-        $checker->addClaimChecker(new RequiredClaimChecker('uih'));
-        $checker->addClaimChecker(new AppSignaturePresenceChecker($securityLevel));
+        $claimCheckers[] = new RequiredClaimChecker('uih');
+        $claimCheckers[] = new AppSignaturePresenceChecker($securityLevel);
 
-        $this->checker = $checker;
+        $this->checker = new ClaimCheckerManager($claimCheckers);
     }
 
     /**
-     * @param JWSInterface $jws
+     * @param JWS $jws
      *
      * @throws ValidationException
      */
-    public function verifyIdToken(JWSInterface $jws)
+    public function verifyIdToken(JWS $jws)
     {
         try {
-            $this->checker->checkJWS($jws, 0);
+            $this->checker->checkClaims(json_decode($jws->getPayload(), true), array('sub', 'iss', 'aud', 'nonce'));
         } catch (\InvalidArgumentException $ex) {
             throw new ValidationException('ID token validation failed: ' . $ex->getMessage(), 0, $ex);
         }

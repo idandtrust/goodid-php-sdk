@@ -162,7 +162,7 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
                 ]
             ]
         ]);
-        $signingKey = new RSAPrivateKey($this->privateKey);
+        $signingKey = new RSAPrivateKey($this->privateKey, array('use' => 'sig', 'kid' => 'test'));
         /* @var GoodIDServerConfig|\PHPUnit_Framework_MockObject_MockObject $serverConfig */
         $serverConfig = $this->createMock(GoodIDServerConfig::class);
         $serverConfig->method('getAudienceUri')
@@ -171,7 +171,7 @@ class OpenIDRequestObjectTest extends \PHPUnit_Framework_TestCase
         $jwt = $request->generateJwt($signingKey, 'a-client-id', 'https://a.redirect.url', $serverConfig);
         $this->assertEquals($this->jwt, $jwt);
 
-        $pubKey = new RSAPublicKey($this->publicKey);
+        $pubKey = new RSAPublicKey($this->publicKey, array('use' => 'sig', 'kid' => 'test'));
         $payload = $pubKey->verifyCompactJws($jwt);
         $this->assertEquals(
             [
@@ -242,5 +242,5 @@ aDhrz+0CgYEAkAF7WpclKxY/YcpBw65i8qqrtLM1J3DxP/eB9WGpggwagyIe6y5c
 4HynUkRp/eyNXxA8kK0LOAxiUJyQAj1MjNcO3TWH4gO/w1kTbTNRjdQ=
 -----END RSA PRIVATE KEY-----';
 
-    private $jwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IkZwYV9jIn0.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOi8vc2VydmVyLmF1ZGllbmNlLnVyaSIsInJlc3BvbnNlX3R5cGUiOiJjb2RlIiwiY2xpZW50X2lkIjoiYS1jbGllbnQtaWQiLCJyZWRpcmVjdF91cmkiOiJodHRwczovL2EucmVkaXJlY3QudXJsIiwic2NvcGUiOiJvcGVuaWQiLCJjbGFpbXMiOnsiaWRfdG9rZW4iOnsiYXV0aF90aW1lIjp7ImVzc2VudGlhbCI6dHJ1ZX19LCJ1c2VyaW5mbyI6eyJuYW1lIjp7ImVzc2VudGlhbCI6dHJ1ZSwidmFsdWUiOiJKb2huIERvZSJ9LCJlbWFpbCI6eyJlc3NlbnRpYWwiOnRydWV9fX19.g_jMiRIGPFugi0xANRWWU-LC9pLirWvWwh0Z50iFB6TdZ3u6FBethAh7PCOKUavg8jVK3kFPdr9pEAd2jm15Hm9ZhiVeUDuWpJLgeTgz-ymtVanZ_NBAfMPEj56zkVfU6gdfzO8mtB72iZM_jUa8SpqOhGUbprAXlGJaLtPxtKuJtYaec65Ai-IfTJcHTp3cypRTsAmakGXi6l6psJfrWpS_0tauM2SQZHHAE_WLM42ExLyG7X2pnYyVs0vG5oirp6sHJw4OdUuRDDc6RRqLPNPn9oy7xoGMLItDVBqv7MRRKT96sWh3IAAaYnZpnFO-wBMT9AyBNdXJYkOXM8Mu9g';
+    private $jwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3QifQ.eyJpc3MiOiJhLWNsaWVudC1pZCIsImF1ZCI6Imh0dHBzOi8vc2VydmVyLmF1ZGllbmNlLnVyaSIsInJlc3BvbnNlX3R5cGUiOiJjb2RlIiwiY2xpZW50X2lkIjoiYS1jbGllbnQtaWQiLCJyZWRpcmVjdF91cmkiOiJodHRwczovL2EucmVkaXJlY3QudXJsIiwic2NvcGUiOiJvcGVuaWQiLCJjbGFpbXMiOnsiaWRfdG9rZW4iOnsiYXV0aF90aW1lIjp7ImVzc2VudGlhbCI6dHJ1ZX19LCJ1c2VyaW5mbyI6eyJuYW1lIjp7ImVzc2VudGlhbCI6dHJ1ZSwidmFsdWUiOiJKb2huIERvZSJ9LCJlbWFpbCI6eyJlc3NlbnRpYWwiOnRydWV9fX19.J1N1WFFxNTBRqdYi1srk6hngF23fV46ld-5JN7uzhCl3Z9o6lK6q9qH2E01BPB_qXq2TI-jBDsnjalcwrE8j4Ux1XE5iB5cfcqsfCoa3wNN1XtI_R6RrbJ-5_eA8M0J1HfuoVifDZfIv8HPIG-KV3d_-6cJp7fhSP74OKg5w58-qLiX4qq8BJwLEM0fBcTbeLjEvsLM4acZjo7wDBCTDHLbkhASzjjEkW6EH7q2rDIOEjkjeuepztxF2dXlqru9QuxkboZOKEUkwAGMc5jG_3v87Rx3FGn4EBk5XQ4b_6gT4WIJ1q60XeguaHO00KnqTx4ZBrG-nKPwk3gv-iP64dw';
 }

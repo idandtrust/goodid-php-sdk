@@ -50,11 +50,10 @@ class ResponseValidator
             if (!is_array($requestedClaims['rules'])) {
                 throw new ValidationException("Rules must be array (logic expression).");
             }
-            if (is_array($requestedClaims['rules'])) {
-                $rules =& $requestedClaims['rules'];
-            }
+
+            $rules =& $requestedClaims['rules'];
         }
-        if (isset($requestedClaims['userinfo'])) {
+        if (isset($requestedClaims['userinfo']) && !is_object($requestedClaims['userinfo'])) {
             $this->validateMatchingResponseForToken(
                 $requestedClaims['userinfo'],
                 $userinfo,

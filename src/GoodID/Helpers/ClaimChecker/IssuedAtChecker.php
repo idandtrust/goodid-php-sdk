@@ -24,10 +24,9 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class IssuedAtChecker implements ClaimCheckerInterface
+class IssuedAtChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var int
@@ -48,22 +47,25 @@ class IssuedAtChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        if (!$jwt->hasClaim('iat')) {
+        if (!isset($claims['iat'])) {
             throw new \InvalidArgumentException('Missing issued at');
         }
 
-        if ((int)$jwt->getClaim('iat') - $this->tolerance > time()) {
+        if ((int)$claims['iat'] - $this->tolerance > time()) {
             throw new \InvalidArgumentException('The token was issued in the future');
         }
+    }
 
-        return ['iat'];
+    public function supportedClaim(): string
+    {
+        return 'iat';
     }
 }

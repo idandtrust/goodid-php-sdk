@@ -25,10 +25,9 @@
 namespace GoodID\Helpers\ClaimChecker;
 
 use GoodID\Helpers\SecurityLevel;
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class AppSignaturePresenceChecker implements ClaimCheckerInterface
+class AppSignaturePresenceChecker implements ClaimChecker, GoodIDClaimChecker
 {
     private $securityLevel;
 
@@ -39,20 +38,20 @@ class AppSignaturePresenceChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
         if ($this->securityLevel === SecurityLevel::HIGH) {
-            if (!$jwt->hasClaim('signatures')) {
+            if (!isset($claims['signatures'])) {
                 throw new \InvalidArgumentException('Missing app signatures');
             }
 
-            $signatures = $jwt->getClaim('signatures');
+            $signatures = $claims['signatures'];
             if (!is_array($signatures)) {
                 throw new \InvalidArgumentException('Malformed app signatures');
             }
@@ -65,14 +64,15 @@ class AppSignaturePresenceChecker implements ClaimCheckerInterface
                     throw new \InvalidArgumentException('Malformed app signatures');
                 }
             }
-
-            return ['signatures'];
         } else {
-            if ($jwt->hasClaim('signatures')) {
+            if (isset($claims['signatures'])) {
                 throw new \InvalidArgumentException('Unexpected app signatures');
             }
-
-            return [];
         }
+    }
+
+    public function supportedClaim(): string
+    {
+        return 'signatures';
     }
 }

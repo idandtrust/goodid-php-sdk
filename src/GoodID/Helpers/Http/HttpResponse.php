@@ -134,6 +134,11 @@ class HttpResponse
         return isset($this->headers[$nameLower]) ? $this->headers[$nameLower] : null;
     }
 
+    public function getHeaders()
+    {
+        return $this->headers;
+    }
+
     /**
      * Parse http headers to an associative array
      * For simplicity duplicate headers are not handled (the last one is kept)

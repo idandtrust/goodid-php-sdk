@@ -30,7 +30,10 @@ use GoodID\Helpers\ClaimChecker\GoodIDUserinfoHashChecker;
 use GoodID\Helpers\ClaimChecker\SubChecker;
 use GoodID\Helpers\SecurityLevel;
 use Jose\Checker\CheckerManager;
-use Jose\Object\JWSInterface;
+use Jose\Component\Signature\JWS;
+use Jose\Component\Encryption\JWE;
+use Jose\Component\Core\Util\JsonConverter;
+use GoodID\Helpers\ClaimChecker\ClaimCheckerManager;
 
 class UserinfoVerifier
 {
@@ -41,33 +44,34 @@ class UserinfoVerifier
 
     /**
      * UserinfoVerifier constructor.
-     * @param JWSInterface $idToken
+     * @param JWS $idToken
      */
-    public function __construct($securityLevel, JWSInterface $idToken)
+    public function __construct($securityLevel, JWS $idToken)
     {
         SecurityLevel::assertValid($securityLevel);
 
-        $checker = new CheckerManager();
+        $idTokenClaims = JsonConverter::decode($idToken->getPayload());
+        
         // OpenID specific validation
-        $checker->addClaimChecker(new SubChecker($idToken->getClaim('sub')));
+        $claimCheckers[] = new SubChecker($idTokenClaims['sub']);
 
         // GoodID specific validation
-        $checker->addClaimChecker(new GoodIDUserinfoHashChecker($idToken));
-        $checker->addClaimChecker(new AppSignatureChecker($securityLevel, $idToken, 'user'));
-        $checker->addClaimChecker(new AppSignatureChecker($securityLevel, $idToken, 'seal'));
+        $claimCheckers[] = new GoodIDUserinfoHashChecker($idToken);
+        $claimCheckers[] = new AppSignatureChecker($securityLevel, $idToken, 'user');
+        $claimCheckers[] = new AppSignatureChecker($securityLevel, $idToken, 'seal');
 
-        $this->checker = $checker;
+        $this->checker = new ClaimCheckerManager($claimCheckers);
     }
 
     /**
-     * @param JWSInterface $userinfo
+     * @param JWE $userinfo
      *
      * @throws ValidationException
      */
-    public function verifyUserinfo(JWSInterface $userinfo)
+    public function verifyUserinfo(JWE $userinfo)
     {
         try {
-            $this->checker->checkJWS($userinfo, 0);
+            $this->checker->checkClaims(JsonConverter::decode($userinfo->getPayload()), 0);
         } catch (\InvalidArgumentException $ex) {
             throw new ValidationException('Userinfo validation failed: ' . $ex->getMessage(), 0, $ex);
         }

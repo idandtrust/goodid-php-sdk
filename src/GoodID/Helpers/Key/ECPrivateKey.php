@@ -27,13 +27,13 @@ namespace GoodID\Helpers\Key;
 use GoodID\Exception\GoodIDException;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Signature\JWSBuilder;
-use Jose\Component\Signature\Algorithm\RS256;
+use Jose\Component\Signature\Algorithm\ES256;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 
 /**
- * RSAPrivateKey class
+ * ECPrivateKey class
  */
-class RSAPrivateKey extends RSAPublicKey
+class ECPrivateKey extends ECPublicKey
 {
     /**
      * Private exponent JWK parameter
@@ -71,7 +71,7 @@ class RSAPrivateKey extends RSAPublicKey
 
         // This managers handles all algorithms we need to use. 
         $algorithmManager = new AlgorithmManager([
-            new RS256(),
+            new ES256(),
         ]);
 
         // The JWS Builder
@@ -82,7 +82,7 @@ class RSAPrivateKey extends RSAPublicKey
             ->create()                    // Indicates we want to create a new token
             ->withPayload($payload)       // We set the payload
             ->addSignature($this->jwk, [
-                self::SIG_ALG_KEY => self::SIG_ALG_VALUE_RS256,
+                self::SIG_ALG_KEY => self::SIG_ALG_VALUE_ES256,
                 self::KEY_ID => $this->getKid()
             ]) // We add a signature
             ->build();                    // We compute the JWS

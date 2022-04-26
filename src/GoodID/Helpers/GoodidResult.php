@@ -24,6 +24,8 @@
 
 namespace GoodID\Helpers;
 
+use GoodID\Authentication\GoodIDResponseInterface;
+
 final class GoodidResult
 {
     /**
@@ -37,11 +39,59 @@ final class GoodidResult
     private $description;
 
     /**
-     * @param bool $isSuccess
+     * @param bool $success
+     * @param string|null $description
      */
-    public function __construct($isSuccess)
+    private function __construct($success, $description = null)
     {
-        $this->success = $isSuccess;
+        $this->success = (bool)$success;
+        $this->description = $description;
+    }
+
+    /**
+     * @param GoodIDResponseInterface $goodidResponse
+     * 
+     * @return \self
+     */
+    public static function createFromResponse(GoodIDResponseInterface $goodidResponse)
+    {
+        $self = new self($goodidResponse->isSuccessful());
+
+        if (!$goodidResponse->isSuccessful() && method_exists($goodidResponse, 'getErrorDescription')) {
+            $self->setErrorDescription($goodidResponse->getErrorDescription());
+        }
+
+        $self->setHeader();
+
+        return $self;
+    }
+
+    /**
+     * @param string $description
+     * 
+     * @return \self
+     */
+    public static function createErrorResponse($description)
+    {
+        $self = new self(false);
+        $self->setErrorDescription($description);
+        $self->setHeader();
+
+        return $self;
+    }
+
+    /**
+     * @param $e \Exception
+     * 
+     * @return \self
+     */
+    public static function createFromException(\Exception $e)
+    {
+        $self = new self(false);
+        $self->setErrorDescription($e->getMessage());
+        $self->setHeader();
+
+        return $self;
     }
 
     /**
@@ -61,8 +111,9 @@ final class GoodidResult
      */
     public function get()
     {
-        $result['success'] = (bool) $this->success;
-        if (!$this->description) {
+        $result['success'] = $this->success;
+
+        if ($this->description) {
             $result['error_description'] = $this->description;
         }
 

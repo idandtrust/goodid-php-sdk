@@ -24,10 +24,9 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class ExpirationChecker implements ClaimCheckerInterface
+class ExpirationChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var int
@@ -48,22 +47,25 @@ class ExpirationChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        if (!$jwt->hasClaim('exp')) {
+        if (!isset($claims['exp'])) {
             throw new \InvalidArgumentException('Missing expiration');
         }
 
-        if ((int)$jwt->getClaim('exp') + $this->tolerance < time()) {
+        if ((int)$claims['exp'] + $this->tolerance < time()) {
             throw new \InvalidArgumentException('The token has expired');
         }
+    }
 
-        return ['exp'];
+    public function supportedClaim(): string
+    {
+        return 'exp';
     }
 }

@@ -24,13 +24,15 @@
 
 namespace GoodID\Authentication;
 
-use GoodID\Authentication\Endpoint\AbstractGoodIDEndpoint;
-use GoodID\Authentication\Endpoint\GoodIDRequestBuilderEndpoint;
+use GoodID\Authentication\Endpoint\AbstractInitiateLoginUriBuilder;
+use GoodID\Authentication\Endpoint\InitiateLoginUriBuilder;
 use GoodID\Exception\GoodIDException;
-use GoodID\Helpers\Key\RSAPrivateKey;
+use GoodID\Helpers\GoodIDPartnerConfig;
 use GoodID\Helpers\OpenIDRequestSource\OpenIDRequestSource;
 use GoodID\Helpers\Request\IncomingRequest;
 use GoodID\ServiceLocator;
+use GoodID\Helpers\MobileCommunicationServiceInterface;
+use GoodID\Authentication\Endpoint\RedirectUriBuilder;
 
 /**
  * GoodIDEndpointFactory class
@@ -41,29 +43,27 @@ final class GoodIDEndpointFactory
      * Creates the appropriate GoodIDEndpoint for the current request with the given parameters
      *
      * @param ServiceLocator $serviceLocator
-     * @param string $clientId The client id of the RP
-     * @param RSAPrivateKey $signingKey The signing key-pair of the RP.
-     * @param RSAPrivateKey $encryptionKey The encryption key-pair of the RP. Can be the same as $signingKey.
+     * @param GoodIDPartnerConfig $goodidPartnerConfig
      * @param OpenIDRequestSource $requestSource An object representing the source of the request object
      * @param string $redirectUri The redirect URI that will be used at normal sign-ins
-     * @param IncomingRequest|null $incomingRequest Please set to null
+     * @param IncomingRequest|null $incomingRequest
      * @param int|null $maxAge Maximum accepted authentication age
      *    This value has no effect when an OpenIDRequestObjectJWT or an OpenIDRequestURI is used
+     * @param string|null $idTokenHint
      * @param string|null $appResponseUri If request was initialised from a web view of a mobile app, set the urlschema to be open from GoodID.
      *
-     * @return AbstractGoodIDEndpoint
+     * @return AbstractInitiateLoginUriBuilder
      *
      * @throws GoodIDException
      */
-    public static function createGoodIDEndpoint(
+    public static function createInitiateLoginEndpoint(
         ServiceLocator $serviceLocator,
-        $clientId,
-        RSAPrivateKey $signingKey,
-        RSAPrivateKey $encryptionKey,
+        GoodIDPartnerConfig $goodidPartnerConfig,
         OpenIDRequestSource $requestSource,
         $redirectUri,
         IncomingRequest $incomingRequest = null,
         $maxAge = null,
+        $idTokenHint = null,
         $appResponseUri = null
     ) {
         $goodIdServerConfig = $serviceLocator->getServerConfig();
@@ -71,19 +71,54 @@ final class GoodIDEndpointFactory
         $incomingRequest = $incomingRequest ?: new IncomingRequest();
         $sessionDataHandler = $serviceLocator->getSessionDataHandler();
         $stateNonceHandler = $serviceLocator->getStateNonceHandler();
+        $sessionStore = $serviceLocator->getGoodidSessionStore();
 
-        return new GoodIDRequestBuilderEndpoint(
+        $goodidEndpoint = new InitiateLoginUriBuilder(
             $incomingRequest,
-            $clientId,
-            $signingKey,
-            $encryptionKey,
+            $goodidPartnerConfig->getClientId(),
+            $goodidPartnerConfig->getSigningKey(),
+            $goodidPartnerConfig->getEncryptionKey(),
             $requestSource,
             $redirectUri,
             $goodIdServerConfig,
             $sessionDataHandler,
             $stateNonceHandler,
             $maxAge,
+            $idTokenHint,
             $appResponseUri
         );
+
+        if ($sessionStore) {
+            $goodidEndpoint->setGoodidSessionProvider($sessionStore);
+        }
+
+        return $goodidEndpoint;
+    }
+
+    /**
+     * @param ServiceLocator $serviceLocator
+     * @param GoodIDPartnerConfig $goodidPartnerConfig
+     * @param MobileCommunicationServiceInterface|null $mobileCommunicationService
+     * @param bool $matchingResponseValidation
+     * @param IncomingRequest|null $incomingRequest
+     * @param bool $setResultForGoodID
+     * 
+     * @return GoodIDSuccessResponse|GoodIDErrorResponse
+     */
+    public static function getResponse(
+        ServiceLocator $serviceLocator,
+        GoodIDPartnerConfig $goodidPartnerConfig,
+        MobileCommunicationServiceInterface $mobileCommunicationService = null,
+        $matchingResponseValidation = true,
+        IncomingRequest $incomingRequest = null,
+        $setResultForGoodID = true
+    ) {
+        $redirectUriBuilder = new RedirectUriBuilder($serviceLocator, $goodidPartnerConfig);
+
+        if ($mobileCommunicationService) {
+            $redirectUriBuilder->setMobileCommunicationService($mobileCommunicationService);
+        }
+
+        return $redirectUriBuilder->handleResponse($matchingResponseValidation, $incomingRequest, $setResultForGoodID);
     }
 }

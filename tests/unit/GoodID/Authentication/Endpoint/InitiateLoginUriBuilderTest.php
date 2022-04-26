@@ -13,7 +13,7 @@ use GoodID\Helpers\SessionDataHandlerInterface;
 use GoodID\Helpers\StateNonceHandler;
 use GoodID\Testing\MockIncomingRequest;
 
-class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
+class InitiateLoginUriBuilderTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @test
@@ -46,34 +46,6 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
             ->willReturn('https://some.request.uri');
 
         $this->buildEndpoint($request, $requestSource, 1.0);
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Iss parameter is missing or is not
-     */
-    public function itFailsIfIssuerIsMissing()
-    {
-        $request = new MockIncomingRequest([]);
-
-        $ep = $this->buildEndpoint($request, $this->createMock(OpenIDRequestSource::class));
-        $ep->buildRequestUrl();
-    }
-
-    /**
-     * @test
-     * @expectedException \GoodID\Exception\GoodIDException
-     * @expectedExceptionMessage Iss parameter is missing or is not
-     */
-    public function itFailsIfIssuerIsInvalid()
-    {
-        $request = new MockIncomingRequest([
-            'iss' => 'https://invalid-issuer',
-        ]);
-
-        $ep = $this->buildEndpoint($request, $this->createMock(OpenIDRequestSource::class));
-        $ep->buildRequestUrl();
     }
 
     /**
@@ -285,7 +257,7 @@ class GoodIDRequestBuilderEndpointTest extends \PHPUnit_Framework_TestCase
         $mockServerConfig->method('getAuthorizationEndpointUri')->willReturn('endpoint-uri');
         $mockServerConfig->method('getIssuerUri')->willReturn('https://some-issuer');
 
-        return new GoodIDRequestBuilderEndpoint(
+        return new InitiateLoginUriBuilder(
             $request,
             'client-id',
             $signingKey,

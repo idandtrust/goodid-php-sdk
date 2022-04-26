@@ -6,6 +6,11 @@ use Jose\Factory\JWSFactory;
 
 class RequiredClaimCheckerTest extends \PHPUnit_Framework_TestCase
 {
+    protected function setUp()
+    {
+        $this->markTestIncomplete();
+    }
+
     /**
      * @test
      * @dataProvider requiredClaimProvider

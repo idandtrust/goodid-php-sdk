@@ -133,10 +133,23 @@ class HttpRequest
         return $this->curl($this->curlOpts);
     }
 
+    /**
+     * @param mixed $data
+     * @return HttpResponse
+     */
     public function postJson($data)
     {
-        $jsonData = json_encode($data);
+        return $this->post(json_encode($data), 'application/json');
+    }
 
+    /**
+     * @param mixed $data
+     * @param string $contentyType
+     * 
+     * @return HttpResponse
+     */
+    public function post($data, $contentyType)
+    {
         $assocHeaders = [];
         $curlHeaders = array_key_exists(CURLOPT_HTTPHEADER, $this->curlOpts) ? $this->curlOpts[CURLOPT_HTTPHEADER] : [];
         foreach ($curlHeaders as $curlHeader) {
@@ -144,15 +157,15 @@ class HttpRequest
             $assocHeaders[$assocHeader[0]] = $assocHeader[1];
         }
         $assocHeaders = array_merge([
-                'Content-Type' => 'application/json',
-                'Content-Length' => strlen($jsonData),
+                'Content-Type' => $contentyType,
+                'Content-Length' => strlen($data),
             ],
             $assocHeaders
         );
 
         $this->setHeaders($assocHeaders);
         $this->curlOpts[CURLOPT_POST] = true;
-        $this->curlOpts[CURLOPT_POSTFIELDS] = $jsonData;
+        $this->curlOpts[CURLOPT_POSTFIELDS] = $data;
 
         return $this->curl($this->curlOpts);
     }

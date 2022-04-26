@@ -5,9 +5,10 @@ namespace GoodID\Helpers;
 interface GoodidSessionStoreInterface
 {
     /**
+     * @param int|null $ttl Seconds
      * @return GoodidSession
      */
-    public function createGoodidSession();
+    public function createGoodidSession($ttl = null);
 
     /**
      * @param GoodidSession $session

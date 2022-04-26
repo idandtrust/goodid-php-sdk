@@ -24,6 +24,7 @@
 
 namespace GoodID\Helpers\Response;
 
+// @TODO
 class LegacyClaimAdapter
 {
     /**

@@ -24,10 +24,9 @@
 
 namespace GoodID\Helpers\ClaimChecker;
 
-use Jose\Checker\ClaimCheckerInterface;
-use Jose\Object\JWTInterface;
+use Jose\Component\Checker\ClaimChecker;
 
-class AuthTimeChecker implements ClaimCheckerInterface
+class AuthTimeChecker implements ClaimChecker, GoodIDClaimChecker
 {
     /**
      * @var int
@@ -62,29 +61,33 @@ class AuthTimeChecker implements ClaimCheckerInterface
     }
 
     /**
-     * @param \Jose\Object\JWTInterface $jwt
+     * @param array $claims
      *
      * @throws \InvalidArgumentException
      *
-     * @return string[]
+     * @return void
      */
-    public function checkClaim(JWTInterface $jwt)
+    public function checkClaim($claims): void
     {
-        if (!$jwt->hasClaim('auth_time')) {
+        if (!isset($claims['auth_time'])) {
             if ($this->requestedMaxAge !== null || $this->authTimeRequested) {
                 throw new \InvalidArgumentException('Missing auth_time');
             }
-            return [];
+
+            return;
         }
 
-        if ((int)$jwt->getClaim('auth_time') - $this->tolerance > time()) {
+        if ((int)$claims['auth_time'] - $this->tolerance > time()) {
             throw new \InvalidArgumentException('The user was authenticated in the future');
         }
 
-        if ($this->requestedMaxAge !== null && (int)$jwt->getClaim('auth_time') + $this->tolerance < time() - $this->requestedMaxAge) {
+        if ($this->requestedMaxAge !== null && (int)$claims['auth_time'] + $this->tolerance < time() - $this->requestedMaxAge) {
             throw new \InvalidArgumentException('The user was authenticated too long ago');
         }
+    }
 
-        return ['auth_time'];
+    public function supportedClaim(): string
+    {
+        return 'auth_time';
     }
 }

@@ -22,47 +22,20 @@
  *
  */
 
-namespace GoodID\Helpers\ClaimChecker;
+namespace GoodID\Authentication;
 
-use Jose\Component\Checker\ClaimChecker;
+use GoodID\Helpers\GoodidResult;
 
-class AudienceChecker implements ClaimChecker, GoodIDClaimChecker
+abstract class AbstractGoodIDResponse implements GoodIDResponseInterface
 {
-    /**
-     * @var string
-     */
-    private $audience;
+    abstract public function isSuccessful();
 
     /**
-     * IdTokenIssuerChecker constructor.
-     * @param string $audience
+     * @return $this
      */
-    public function __construct($audience)
+    public function setResult()
     {
-        $this->audience = $audience;
-    }
-
-    /**
-     * @param $claims
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return void
-     */
-    public function checkClaim($claims): void
-    {
-        if (!isset($claims['aud'])) {
-            throw new \InvalidArgumentException('Missing audience');
-        }
-
-        $audience = (array) $claims['aud'];
-        if (!in_array($this->audience, $audience, true)) {
-            throw new \InvalidArgumentException('Invalid audience');
-        }
-    }
-
-    public function supportedClaim(): string
-    {
-        return 'aud';
+        GoodidResult::createFromResponse($this);
+        return $this;
     }
 }
